@@ -68,7 +68,21 @@ body {
   transform: translateY(-2px);
 }
 
-.cbtn-piece { display:flex; align-items:center; justify-content:center; }
+.cbtn-piece {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.setup-piece {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
 .btnlbl { font-size: 13px; font-weight: 600; color: var(--text2); }
 
 /* ── Game layout ── */
@@ -147,10 +161,6 @@ body {
   pointer-events: none;
   position: relative;
   z-index: 1;
-}
-
-.piece:hover {
-  transform: none;
 }
 
 /* ── Side panel ── */
@@ -379,21 +389,52 @@ body {
 
 /* Piece palette */
 .piece-palette {
-  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-top: 6px;
 }
 .pal-piece {
-  font-size: 26px; line-height: 1; text-align: center;
-  padding: 4px 2px; border-radius: 6px; cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 2px;
+  border-radius: 6px;
+  cursor: pointer;
   border: 1.5px solid transparent;
   transition: border-color .12s, background .12s;
+  min-height: 38px;
 }
 .pal-piece:hover  { border-color: var(--accent); background: var(--accent-dim); }
 .pal-piece.pal-active { border-color: var(--accent); background: var(--accent-dim); }
-.pal-erase { font-size: 16px; color: var(--danger); display: flex; align-items: center; justify-content: center; }
+
+.pal-piece-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
+.pal-erase {
+  font-size: 16px;
+  color: var(--danger);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .ed-sq { cursor: crosshair; }
 
 /* Turn toggle */
-.turn-toggle { display: flex; gap: 0; margin-top: 6px; border: 1px solid var(--border2); border-radius: var(--radius-sm); overflow: hidden; }
+.turn-toggle {
+  display: flex;
+  gap: 0;
+  margin-top: 6px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
 .turn-btn {
   flex: 1; background: var(--surface); border: none;
   padding: 8px; font-size: 12px; font-weight: 600; color: var(--text2);
