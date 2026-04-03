@@ -3,7 +3,6 @@
  * Two modes: Engine Assist (engine plays your pieces) and vs Engine (you play against the engine)
  */
 
-
 const SYMBOLS = {
   w: { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' },
   b: { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' }

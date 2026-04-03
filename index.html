@@ -12,16 +12,18 @@
       <h1>Chess Assistant</h1>
 
       <div class="mode-tabs">
-        <button class="tab active" onclick="selectTab('vs')" id="tab-vs">Play vs Engine</button>
-        <button class="tab" onclick="selectTab('assist')" id="tab-assist">Engine Assist</button>
+        <button class="tab active" onclick="selectTab('vs')"     id="tab-vs">Play vs Engine</button>
+        <button class="tab"        onclick="selectTab('assist')" id="tab-assist">Engine Assist</button>
+        <button class="tab"        onclick="selectTab('puzzle')" id="tab-puzzle">Puzzles</button>
       </div>
 
+      <!-- Play vs Engine -->
       <div id="panel-vs" class="tab-panel">
         <p>You move your own pieces. The engine plays the opponent.</p>
         <small>Classic mode — try to beat the engine</small>
         <div class="color-choice">
           <div class="cbtn" onclick="startGame('w','vs')">
-            <span class="pi wpi">♔</span>
+            <span class="pi wpi">♚</span>
             <span class="btnlbl">Play White</span>
           </div>
           <div class="cbtn" onclick="startGame('b','vs')">
@@ -31,12 +33,13 @@
         </div>
       </div>
 
+      <!-- Engine Assist -->
       <div id="panel-assist" class="tab-panel" style="display:none">
         <p>The engine plays your pieces. You move the opponent's.</p>
         <small>Study mode — reproduce positions and see how the engine continues</small>
         <div class="color-choice">
           <div class="cbtn" onclick="startGame('w','assist')">
-            <span class="pi wpi">♔</span>
+            <span class="pi wpi">♚</span>
             <span class="btnlbl">White assisted</span>
           </div>
           <div class="cbtn" onclick="startGame('b','assist')">
@@ -46,7 +49,20 @@
         </div>
       </div>
 
-      <div class="depth-setup">
+      <!-- Puzzles -->
+      <div id="panel-puzzle" class="tab-panel" style="display:none">
+        <p>Solve 20 curated tactical puzzles. Once complete, the engine generates new ones dynamically.</p>
+        <small>Mate in 1 · Position editor · Share custom puzzles via link</small>
+        <div class="color-choice">
+          <div class="cbtn wide" onclick="startPuzzleMode()">
+            <span style="font-size:44px">♟</span>
+            <span class="btnlbl">Start puzzles</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Engine strength (shared across game modes) -->
+      <div class="depth-setup" id="depth-setup-panel">
         <div class="clbl">Engine strength</div>
         <div class="depth-row">
           <label>Depth</label>
@@ -63,17 +79,28 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
   <script src="engine.js"></script>
+  <script src="puzzles.js"></script>
   <script src="ui.js"></script>
+  <script src="puzzle-mode.js"></script>
   <script>
     function selectTab(tab) {
-      document.getElementById('panel-vs').style.display     = tab === 'vs'     ? 'block' : 'none';
-      document.getElementById('panel-assist').style.display = tab === 'assist' ? 'block' : 'none';
-      document.getElementById('tab-vs').classList.toggle('active',     tab === 'vs');
-      document.getElementById('tab-assist').classList.toggle('active', tab === 'assist');
+      ['vs','assist','puzzle'].forEach(t => {
+        document.getElementById('panel-' + t).style.display = t === tab ? 'block' : 'none';
+        document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+      });
+      document.getElementById('depth-setup-panel').style.display = tab === 'puzzle' ? 'none' : 'block';
     }
     function depthDescText(d) {
       return DEPTH_LABELS[d].label + ' — ' + DEPTH_LABELS[d].desc;
     }
+    // Load shared puzzle on page load
+    window.addEventListener('load', () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('puzzle')) {
+        selectTab('puzzle');
+        startPuzzleMode();
+      }
+    });
   </script>
 </body>
 </html>

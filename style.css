@@ -309,3 +309,97 @@ body {
   padding: 2px 8px;
   border-radius: 20px;
 }
+
+/* ── Puzzle mode ── */
+#puzzle-app { width: 100%; }
+
+.puzzle-tabs {
+  display: flex; gap: 0;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: fit-content;
+  margin: 0 0 1.5rem;
+}
+.ptab {
+  background: var(--surface); border: none;
+  padding: 9px 20px; font-size: 13px; font-weight: 600;
+  color: var(--text2); cursor: pointer; font-family: inherit;
+  transition: background .15s, color .15s;
+}
+.ptab + .ptab { border-left: 1px solid var(--border2); }
+.ptab.active  { background: var(--accent); color: #fff; }
+.ptab:not(.active):hover { background: var(--surface2); color: var(--text); }
+
+.pz-layout {
+  display: flex; gap: 24px;
+  align-items: flex-start; flex-wrap: wrap; justify-content: center;
+  width: 100%;
+}
+
+/* Progress bar */
+.pz-bar-wrap {
+  height: 4px; background: var(--border); border-radius: 2px;
+  margin-top: 8px; overflow: hidden;
+}
+.pz-bar {
+  height: 100%; background: var(--accent); border-radius: 2px;
+  transition: width .4s ease;
+}
+
+/* Difficulty stars */
+.pz-diff {
+  font-size: 14px; color: var(--accent); margin-top: 4px; letter-spacing: 2px;
+}
+
+/* Status colors */
+.pz-status-ok  { color: var(--success); font-weight: 600; }
+.pz-status-err { color: var(--danger);  font-weight: 600; }
+
+/* Puzzle buttons */
+.pz-btn {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); color: var(--text2);
+  padding: 9px 14px; font-size: 13px; font-weight: 600;
+  cursor: pointer; width: 100%; font-family: inherit;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.pz-btn:hover { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+.pz-btn.primary {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+.pz-btn.primary:hover { opacity: .9; }
+
+/* Piece palette */
+.piece-palette {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px;
+}
+.pal-piece {
+  font-size: 26px; line-height: 1; text-align: center;
+  padding: 4px 2px; border-radius: 6px; cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: border-color .12s, background .12s;
+}
+.pal-piece:hover  { border-color: var(--accent); background: var(--accent-dim); }
+.pal-piece.pal-active { border-color: var(--accent); background: var(--accent-dim); }
+.pal-erase { font-size: 16px; color: var(--danger); display: flex; align-items: center; justify-content: center; }
+.ed-sq { cursor: crosshair; }
+
+/* Turn toggle */
+.turn-toggle { display: flex; gap: 0; margin-top: 6px; border: 1px solid var(--border2); border-radius: var(--radius-sm); overflow: hidden; }
+.turn-btn {
+  flex: 1; background: var(--surface); border: none;
+  padding: 8px; font-size: 12px; font-weight: 600; color: var(--text2);
+  cursor: pointer; font-family: inherit; transition: background .12s, color .12s;
+}
+.turn-btn + .turn-btn { border-left: 1px solid var(--border2); }
+.turn-btn.active { background: var(--accent); color: #fff; }
+
+/* Wide single button for puzzle start */
+.cbtn.wide { width: 180px; }
+
+/* Thinker dots */
+.thnk { color: var(--accent); }
+.thnk span { animation: blink 1.3s infinite; display: inline-block; }
+.thnk span:nth-child(2) { animation-delay: .2s; }
+.thnk span:nth-child(3) { animation-delay: .4s; }
