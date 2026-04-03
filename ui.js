@@ -1,7 +1,7 @@
 /**
  * Chess Assistant — UI
  * Two modes: Engine Assist and vs Engine
- * Uses getPieceSVG() from pieces.js — no Unicode symbols
+ * Uses getPieceSVG() from pieces.js
  */
 
 const DEPTH_LABELS = {
@@ -118,39 +118,51 @@ function squareFromIndex(row, col) {
 
 function getCheckedKingSquare() {
   if (!chess.in_check()) return null;
-  const board = chess.board(), turn = chess.turn();
-  for (let r = 0; r < 8; r++)
+  const board = chess.board();
+  const turn = chess.turn();
+
+  for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const p = board[r][c];
-      if (p && p.type === 'k' && p.color === turn) return 'abcdefgh'[c] + (8 - r);
+      if (p && p.type === 'k' && p.color === turn) {
+        return 'abcdefgh'[c] + (8 - r);
+      }
     }
+  }
   return null;
 }
 
 function renderBoard() {
   const boardEl = document.getElementById('board');
   if (!boardEl) return;
+
   const checkedSq = getCheckedKingSquare();
   const board = chess.board();
   let html = '';
 
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
-      const sq    = squareFromIndex(row, col);
-      const piece = playerColor === 'w' ? board[row][col] : board[7-row][7-col];
-      const lt    = (row + col) % 2 === 0;
-      let cls     = 'sq ' + (lt ? 'lt' : 'dk');
+      const sq = squareFromIndex(row, col);
+      const piece = playerColor === 'w' ? board[row][col] : board[7 - row][7 - col];
+      const isLight = (row + col) % 2 === 0;
 
-      if (sq === selectedSq)                       cls += ' sel';
-      else if (lastMove && sq === lastMove.from)   cls += ' lf';
-      else if (lastMove && sq === lastMove.to)     cls += ' lt2';
-      if (sq === checkedSq)                        cls += ' chk';
-      if (legalTargets.includes(sq))               cls += piece ? ' hr' : ' hd';
+      let cls = 'sq ' + (isLight ? 'lt' : 'dk');
 
-      const ph = piece ? getPieceSVG(piece.color, piece.type) : '';
-      html += `<div class="${cls}" onclick="onSquareClick('${sq}')">${ph}</div>`;
+      if (sq === selectedSq) cls += ' sel';
+      else if (lastMove && sq === lastMove.from) cls += ' lf';
+      else if (lastMove && sq === lastMove.to) cls += ' lt2';
+
+      if (sq === checkedSq) cls += ' chk';
+      if (legalTargets.includes(sq)) cls += piece ? ' hr' : ' hd';
+
+      const pieceHTML = piece
+        ? `<img class="piece" src="${getPieceSVG(piece.color, piece.type)}" alt="" draggable="false" />`
+        : '';
+
+      html += `<div class="${cls}" onclick="onSquareClick('${sq}')">${pieceHTML}</div>`;
     }
   }
+
   boardEl.innerHTML = html;
   updateStatus();
   updateMoveHistory();
@@ -160,13 +172,15 @@ function renderBoard() {
 
 function onSquareClick(sq) {
   if (engineThinking || gameOver) return;
+
   const humanColor = gameMode === 'assist' ? (playerColor === 'w' ? 'b' : 'w') : playerColor;
   if (chess.turn() !== humanColor) return;
+
   const piece = chess.get(sq);
 
   if (!selectedSq) {
     if (piece && piece.color === humanColor) {
-      selectedSq   = sq;
+      selectedSq = sq;
       legalTargets = chess.moves({ square: sq, verbose: true }).map(m => m.to);
       renderBoard();
     }
@@ -176,23 +190,31 @@ function onSquareClick(sq) {
   if (legalTargets.includes(sq)) {
     const move = chess.move({ from: selectedSq, to: sq, promotion: 'q' });
     if (move) {
-      lastMove     = { from: move.from, to: move.to };
-      selectedSq   = null;
+      lastMove = { from: move.from, to: move.to };
+      selectedSq = null;
       legalTargets = [];
       renderBoard();
-      if (chess.game_over()) { gameOver = true; setTimeout(showGameOverBanner, 400); }
-      else { engineThinking = true; renderBoard(); setTimeout(runEngine, 30); }
+
+      if (chess.game_over()) {
+        gameOver = true;
+        setTimeout(showGameOverBanner, 400);
+      } else {
+        engineThinking = true;
+        renderBoard();
+        setTimeout(runEngine, 30);
+      }
       return;
     }
   }
 
   if (piece && piece.color === humanColor) {
-    selectedSq   = sq;
+    selectedSq = sq;
     legalTargets = chess.moves({ square: sq, verbose: true }).map(m => m.to);
   } else {
-    selectedSq   = null;
+    selectedSq = null;
     legalTargets = [];
   }
+
   renderBoard();
 }
 
@@ -201,13 +223,19 @@ function onSquareClick(sq) {
 function runEngine() {
   const engineColor = gameMode === 'assist' ? playerColor : (playerColor === 'w' ? 'b' : 'w');
   const best = getBestMove(chess, engineDepth, engineColor);
+
   if (best) {
     const result = chess.move(best);
     if (result) lastMove = { from: result.from, to: result.to };
   }
+
   engineThinking = false;
   renderBoard();
-  if (chess.game_over()) { gameOver = true; setTimeout(showGameOverBanner, 400); }
+
+  if (chess.game_over()) {
+    gameOver = true;
+    setTimeout(showGameOverBanner, 400);
+  }
 }
 
 // ── Status & History ────────────────────────────────────────────────────────
@@ -215,12 +243,29 @@ function runEngine() {
 function updateStatus() {
   const el = document.getElementById('status-text');
   if (!el) return;
+
   const humanColor = gameMode === 'assist' ? (playerColor === 'w' ? 'b' : 'w') : playerColor;
 
-  if (engineThinking) { el.innerHTML = '<span class="thnk">Engine calculating<span>.</span><span>.</span><span>.</span></span>'; return; }
-  if (chess.in_checkmate()) { el.textContent = `Checkmate — ${chess.turn() === 'w' ? 'Black' : 'White'} wins`; return; }
-  if (chess.in_draw())      { el.textContent = 'Draw'; return; }
-  if (chess.in_check())     { el.textContent = `${chess.turn() === 'w' ? 'White' : 'Black'} is in check!`; return; }
+  if (engineThinking) {
+    el.innerHTML = '<span class="thnk">Engine calculating<span>.</span><span>.</span><span>.</span></span>';
+    return;
+  }
+
+  if (chess.in_checkmate()) {
+    el.textContent = `Checkmate — ${chess.turn() === 'w' ? 'Black' : 'White'} wins`;
+    return;
+  }
+
+  if (chess.in_draw()) {
+    el.textContent = 'Draw';
+    return;
+  }
+
+  if (chess.in_check()) {
+    el.textContent = `${chess.turn() === 'w' ? 'White' : 'Black'} is in check!`;
+    return;
+  }
+
   el.textContent = chess.turn() === humanColor
     ? (gameMode === 'assist' ? "Move the opponent's pieces" : 'Your turn')
     : 'Engine is thinking…';
@@ -229,17 +274,23 @@ function updateStatus() {
 function updateMoveHistory() {
   const el = document.getElementById('move-list');
   if (!el) return;
+
   const history = chess.history();
-  if (!history.length) { el.innerHTML = '<div class="no-moves">No moves yet</div>'; return; }
+  if (!history.length) {
+    el.innerHTML = '<div class="no-moves">No moves yet</div>';
+    return;
+  }
 
   const whiteIsMe = playerColor === 'w';
   let html = '<div class="move-grid">';
+
   for (let i = 0; i < history.length; i += 2) {
     const n = Math.floor(i / 2) + 1;
     html += `<span class="move-num">${n}.</span>
       <span class="move-san ${whiteIsMe ? 'mine' : 'opp'}">${history[i] || ''}</span>
-      <span class="move-san ${!whiteIsMe ? 'mine' : 'opp'}">${history[i+1] || ''}</span>`;
+      <span class="move-san ${!whiteIsMe ? 'mine' : 'opp'}">${history[i + 1] || ''}</span>`;
   }
+
   html += '</div>';
   el.innerHTML = html;
   el.scrollTop = el.scrollHeight;
@@ -248,15 +299,24 @@ function updateMoveHistory() {
 function showGameOverBanner() {
   const slot = document.getElementById('gameover-slot');
   if (!slot) return;
-  let cls = 'draw', title = 'Draw', sub = 'The game is drawn';
+
+  let cls = 'draw';
+  let title = 'Draw';
+  let sub = 'The game is drawn';
+
   if (chess.in_checkmate()) {
     const winnerColor = chess.turn() === 'w' ? 'b' : 'w';
-    const playerWon   = winnerColor === playerColor;
-    cls   = playerWon ? 'win' : 'lose';
+    const playerWon = winnerColor === playerColor;
+    cls = playerWon ? 'win' : 'lose';
     title = playerWon ? 'Victory!' : 'Defeat';
-    sub   = 'Checkmate';
-  } else if (chess.in_stalemate())          { sub = 'Stalemate'; }
-  else if (chess.in_threefold_repetition()) { sub = 'Threefold repetition'; }
-  else if (chess.insufficient_material())   { sub = 'Insufficient material'; }
+    sub = 'Checkmate';
+  } else if (chess.in_stalemate()) {
+    sub = 'Stalemate';
+  } else if (chess.in_threefold_repetition()) {
+    sub = 'Threefold repetition';
+  } else if (chess.insufficient_material()) {
+    sub = 'Insufficient material';
+  }
+
   slot.innerHTML = `<div class="game-over ${cls}"><h3>${title}</h3><p>${sub}</p></div>`;
 }
