@@ -3,7 +3,6 @@
 
 A browser-based chess assistant where a real chess engine plays your pieces while you control the opponent. No backend, no AI API calls — pure JavaScript running in the browser.
 
-![Chess Assistant](https://img.shields.io/badge/built%20with-vanilla%20JS-yellow) ![License](https://img.shields.io/badge/license-MIT-blue) ![Deploy](https://img.shields.io/badge/deploy-Vercel-black)
 
 ---
 
