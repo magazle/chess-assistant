@@ -3,6 +3,10 @@
  * Two modes: Engine Assist (engine plays your pieces) and vs Engine (you play against the engine)
  */
 
+.chess-piece {
+  font-family: "Noto Sans Symbols", "Segoe UI Symbol", "Apple Symbols", sans-serif;
+}
+
 const SYMBOLS = {
   w: { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' },
   b: { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' }
