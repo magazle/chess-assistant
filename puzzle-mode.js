@@ -366,29 +366,43 @@ function buildEditorUI() {
         <div class="pcard">
           <div class="clbl">Pieces</div>
           <div class="piece-palette" id="ed-palette">
-  ${EDITOR_PIECES.map(p => `
-    <div class="pal-piece" data-color="${p.color}" data-type="${p.type}"
-         onclick="selectEditorPiece('${p.color}','${p.type}')"
-         title="${p.color === 'w' ? 'White' : 'Black'} ${p.type.toUpperCase()}">
-      ${pieceImgHTML(p.color, p.type, 'pal-piece-img')}
+
+  <!-- Riga 1: white -->
+  ${['k','q','r','b','n'].map(t => `
+    <div class="pal-piece" onclick="selectEditorPiece('w','${t}')">
+      ${pieceImgHTML('w', t, 'pal-piece-img')}
     </div>
   `).join('')}
 
-  <div class="pal-piece pal-erase" onclick="selectEditorPiece(null,null)" title="Erase">✕</div>
+  <!-- spacer per chiudere la riga -->
+  <div class="pal-spacer"></div>
+
+  <!-- Riga 2: black -->
+  ${['k','q','r','b','n'].map(t => `
+    <div class="pal-piece" onclick="selectEditorPiece('b','${t}')">
+      ${pieceImgHTML('b', t, 'pal-piece-img')}
+    </div>
+  `).join('')}
+
+  <!-- erase in fondo riga -->
+  <div class="pal-piece pal-erase" onclick="selectEditorPiece(null,null)">✕</div>
+
+  <!-- Riga 3: centrata -->
+  <div class="pal-spacer"></div>
   <div class="pal-spacer"></div>
   <div class="pal-spacer"></div>
 
-  <div class="pal-piece" data-color="w" data-type="p"
-       onclick="selectEditorPiece('w','p')" title="White Pawn">
-    ${pieceImgHTML('w', 'p', 'pal-piece-img')}
+  <div class="pal-piece" onclick="selectEditorPiece('w','p')">
+    ${pieceImgHTML('w','p','pal-piece-img')}
   </div>
 
-  <div class="pal-piece" data-color="b" data-type="p"
-       onclick="selectEditorPiece('b','p')" title="Black Pawn">
-    ${pieceImgHTML('b', 'p', 'pal-piece-img')}
+  <div class="pal-piece" onclick="selectEditorPiece('b','p')">
+    ${pieceImgHTML('b','p','pal-piece-img')}
   </div>
+
+  <div class="pal-spacer"></div>
+
 </div>
-
         <div class="pcard">
           <div class="clbl">Side to move</div>
           <div class="turn-toggle">
