@@ -8,6 +8,13 @@ const SYMBOLS = {
   b: { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' }
 };
 
+const DEPTH_LABELS = {
+  2: { label: 'Beginner', desc: 'Looks 2 moves ahead. Avoids immediate blunders but misses short combinations. Very fast.' },
+  3: { label: 'Intermediate', desc: 'Looks 3 moves ahead. Spots basic tactics (forks, captures). Recommended for most players.' },
+  4: { label: 'Advanced', desc: 'Looks 4 moves ahead. Finds multi-step tactics and plays solid positional chess. May take 2–5 seconds.' },
+  5: { label: 'Strong', desc: 'Looks 5 moves ahead. Calculates deep combinations and defends precisely. Can take up to 15 seconds per move.' }
+};
+
 let chess = null;
 let playerColor = null;
 let selectedSq = null;
@@ -32,7 +39,6 @@ function startGame(color) {
   buildGameUI();
   renderBoard();
 
-  // If engine plays white, go first
   if (chess.turn() === playerColor) {
     setTimeout(runEngine, 80);
   }
@@ -45,6 +51,11 @@ function resetGame() {
 }
 
 // ── UI Construction ─────────────────────────────────────────────────────────
+
+function depthDescHTML(d) {
+  const info = DEPTH_LABELS[d];
+  return `<div class="depth-desc"><strong>${info.label}</strong> — ${info.desc}</div>`;
+}
 
 function buildGameUI() {
   const gameEl = document.getElementById('game');
@@ -74,34 +85,35 @@ function buildGameUI() {
 
     <div class="side-panel">
       <div class="pcard">
-        <div class="clbl">Giochi come</div>
-        <div class="pname">${playerColor === 'w' ? '♔ Bianco' : '♚ Nero'}</div>
-        <div class="psub">Il motore muove i tuoi pezzi</div>
+        <div class="clbl">Playing as</div>
+        <div class="pname">${playerColor === 'w' ? '♔ White' : '♚ Black'}</div>
+        <div class="psub">Engine moves your pieces</div>
       </div>
 
       <div class="pcard">
-        <div class="clbl">Forza motore</div>
+        <div class="clbl">Engine strength</div>
         <div class="depth-row">
-          <label>Profondità</label>
+          <label>Depth</label>
           <input type="range" min="2" max="5" value="${engineDepth}" id="depthSlider"
-            oninput="engineDepth = +this.value; document.getElementById('depthVal').textContent = this.value">
-          <span id="depthVal">${engineDepth}</span>
+            oninput="engineDepth = +this.value; document.getElementById('depthVal').textContent = this.value; document.getElementById('depthDesc').innerHTML = depthDescHTML(+this.value)">
+          <span class="depth-val" id="depthVal">${engineDepth}</span>
         </div>
+        <div id="depthDesc">${depthDescHTML(engineDepth)}</div>
       </div>
 
       <div class="pcard">
-        <div class="clbl">Stato</div>
+        <div class="clbl">Status</div>
         <div id="status-text"></div>
       </div>
 
       <div class="pcard history-card">
-        <div class="clbl">Mosse</div>
+        <div class="clbl">Moves</div>
         <div id="move-list"></div>
       </div>
 
       <div id="gameover-slot"></div>
 
-      <button class="new-game-btn" onclick="resetGame()">↩ Nuova partita</button>
+      <button class="new-game-btn" onclick="resetGame()">↩ New game</button>
     </div>
   `;
 }
@@ -172,14 +184,11 @@ function onSquareClick(sq) {
   if (engineThinking || gameOver) return;
 
   const opponentColor = playerColor === 'w' ? 'b' : 'w';
-
-  // Only respond when it's the opponent's turn
   if (chess.turn() !== opponentColor) return;
 
   const piece = chess.get(sq);
 
   if (!selectedSq) {
-    // Select a piece
     if (piece && piece.color === opponentColor) {
       selectedSq = sq;
       legalTargets = chess.moves({ square: sq, verbose: true }).map(m => m.to);
@@ -188,7 +197,6 @@ function onSquareClick(sq) {
     return;
   }
 
-  // Attempt to move to target square
   if (legalTargets.includes(sq)) {
     const move = chess.move({ from: selectedSq, to: sq, promotion: 'q' });
     if (move) {
@@ -209,7 +217,6 @@ function onSquareClick(sq) {
     }
   }
 
-  // Re-select a different piece
   if (piece && piece.color === opponentColor) {
     selectedSq = sq;
     legalTargets = chess.moves({ square: sq, verbose: true }).map(m => m.to);
@@ -246,22 +253,22 @@ function updateStatus() {
   const opponentColor = playerColor === 'w' ? 'b' : 'w';
 
   if (engineThinking) {
-    el.innerHTML = '<span class="thnk">Motore calcola<span>.</span><span>.</span><span>.</span></span>';
+    el.innerHTML = '<span class="thnk">Engine calculating<span>.</span><span>.</span><span>.</span></span>';
     return;
   }
   if (chess.in_checkmate()) {
-    el.textContent = `Scacco matto — vince il ${chess.turn() === 'w' ? 'Nero' : 'Bianco'}`;
+    el.textContent = `Checkmate — ${chess.turn() === 'w' ? 'Black' : 'White'} wins`;
     return;
   }
-  if (chess.in_draw()) { el.textContent = 'Patta'; return; }
+  if (chess.in_draw()) { el.textContent = 'Draw'; return; }
   if (chess.in_check()) {
-    el.textContent = `Scacco al ${chess.turn() === 'w' ? 'Bianco' : 'Nero'}!`;
+    el.textContent = `${chess.turn() === 'w' ? 'White' : 'Black'} is in check!`;
     return;
   }
   if (chess.turn() === opponentColor) {
-    el.textContent = "Muovi i pezzi dell'avversario";
+    el.textContent = "Move the opponent's pieces";
   } else {
-    el.textContent = 'Motore in elaborazione…';
+    el.textContent = 'Engine is thinking…';
   }
 }
 
@@ -271,7 +278,7 @@ function updateMoveHistory() {
 
   const history = chess.history();
   if (!history.length) {
-    el.innerHTML = '<div class="no-moves">Nessuna mossa ancora</div>';
+    el.innerHTML = '<div class="no-moves">No moves yet</div>';
     return;
   }
 
@@ -296,20 +303,20 @@ function showGameOverBanner() {
   const slot = document.getElementById('gameover-slot');
   if (!slot) return;
 
-  let cls = 'draw', title = 'Patta', sub = 'La partita è patta';
+  let cls = 'draw', title = 'Draw', sub = 'The game is drawn';
 
   if (chess.in_checkmate()) {
     const winnerColor = chess.turn() === 'w' ? 'b' : 'w';
     const engineWon = winnerColor === playerColor;
     cls = engineWon ? 'win' : 'lose';
-    title = engineWon ? 'Vittoria!' : 'Sconfitta';
-    sub = 'Scacco matto';
+    title = engineWon ? 'Victory!' : 'Defeat';
+    sub = 'Checkmate';
   } else if (chess.in_stalemate()) {
-    sub = 'Stallo';
+    sub = 'Stalemate';
   } else if (chess.in_threefold_repetition()) {
-    sub = 'Triplice ripetizione';
+    sub = 'Threefold repetition';
   } else if (chess.insufficient_material()) {
-    sub = 'Materiale insufficiente';
+    sub = 'Insufficient material';
   }
 
   slot.innerHTML = `
