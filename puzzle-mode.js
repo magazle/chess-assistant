@@ -1,34 +1,36 @@
 /**
- * Puzzle Mode — UI
- * Curated puzzles + dynamic generation + position editor with URL sharing
+ * Puzzle Mode — Solve & Create
+ * No dynamic generation. Two separate entry points from index.html.
  */
 
-let pzChess         = null;   // chess.js instance for current puzzle
-let pzPuzzle        = null;   // current puzzle object
-let pzIndex         = 0;      // index into CURATED_PUZZLES (or 'generated' mode)
-let pzSolved        = 0;      // number solved this session
-let pzSelectedSq    = null;
-let pzLegalTargets  = [];
-let pzLastMove      = null;
-let pzOver          = false;  // puzzle solved/skipped
-let pzDynamic       = false;  // true when in dynamic generation mode
-let pzDynCount      = 0;      // counter for generated puzzles
-let pzCompleted     = new Set(); // ids of solved puzzles
+let pzChess        = null;
+let pzPuzzle       = null;
+let pzIndex        = 0;
+let pzSelectedSq   = null;
+let pzLegalTargets = [];
+let pzLastMove     = null;
+let pzOver         = false;
 
 // Editor state
 let edChess         = null;
-let edSelectedPiece = null;   // { color, type } from palette
+let edSelectedPiece = null;
 let edTurn          = 'w';
 
-// ── Entry ──────────────────────────────────────────────────────────────────
+const EDITOR_PIECES = [
+  { color:'w', type:'k' },{ color:'w', type:'q' },{ color:'w', type:'r' },
+  { color:'w', type:'b' },{ color:'w', type:'n' },{ color:'w', type:'p' },
+  { color:'b', type:'k' },{ color:'b', type:'q' },{ color:'b', type:'r' },
+  { color:'b', type:'b' },{ color:'b', type:'n' },{ color:'b', type:'p' },
+];
 
-function startPuzzleMode() {
+// ── Entry points ────────────────────────────────────────────────────────────
+
+function startSolveMode() {
   document.getElementById('setup').style.display = 'none';
   const gameEl = document.getElementById('game');
   gameEl.style.display = 'block';
-  gameEl.style.flexWrap = 'wrap';
-
-  buildPuzzleShell();
+  gameEl.innerHTML = '';
+  pzIndex = 0; pzPuzzle = null; pzOver = false;
 
   // Check URL for shared puzzle
   const params = new URLSearchParams(window.location.search);
@@ -36,63 +38,111 @@ function startPuzzleMode() {
   if (sharedFen) {
     loadSharedPuzzle(sharedFen);
   } else {
-    showSubMode('solve');
+    loadNextPuzzle();
   }
 }
 
-function buildPuzzleShell() {
+function startEditorMode() {
+  document.getElementById('setup').style.display = 'none';
+  const gameEl = document.getElementById('game');
+  gameEl.style.display = 'block';
+  gameEl.innerHTML = '';
+  edChess = new Chess();
+  edChess.clear();
+  edTurn = 'w';
+  edSelectedPiece = null;
+  buildEditorUI();
+}
+
+function exitPuzzleMode() {
+  pzPuzzle = null; pzIndex = 0; pzOver = false;
+  edChess = null;
+  document.getElementById('game').style.display = 'none';
+  document.getElementById('game').innerHTML = '';
+  document.getElementById('setup').style.display = 'block';
+}
+
+// ── Solve — Load ────────────────────────────────────────────────────────────
+
+function loadNextPuzzle() {
+  pzOver = false; pzSelectedSq = null; pzLegalTargets = []; pzLastMove = null;
+  if (pzIndex >= CURATED_PUZZLES.length) {
+    showAllSolvedScreen();
+    return;
+  }
+  loadPuzzle(CURATED_PUZZLES[pzIndex]);
+  pzIndex++;
+}
+
+function loadPuzzle(puzzle) {
+  pzPuzzle = puzzle;
+  pzChess  = new Chess();
+  pzChess.load(puzzle.fen);
+  buildSolveUI();
+}
+
+function loadSharedPuzzle(fen) {
+  try {
+    const test = new Chess();
+    if (!test.load(fen)) throw new Error('invalid');
+    const mate = findMateInOne(test);
+    loadPuzzle({
+      id: 'shared', title: 'Shared Puzzle',
+      type: mate ? 'Mate in 1' : 'Custom Position',
+      diff: 2, fen,
+      solution: mate ? [mate] : [],
+      hint: 'This puzzle was shared via link.'
+    });
+    const url = new URL(window.location);
+    url.searchParams.delete('puzzle');
+    history.replaceState({}, '', url);
+  } catch { loadNextPuzzle(); }
+}
+
+function showAllSolvedScreen() {
   document.getElementById('game').innerHTML = `
-    <div id="puzzle-app" style="width:100%">
-      <div class="puzzle-tabs">
-        <button class="ptab active" onclick="showSubMode('solve')" id="ptab-solve">Solve</button>
-        <button class="ptab" onclick="showSubMode('editor')" id="ptab-editor">Position editor</button>
-      </div>
-      <div id="pz-solve-view"></div>
-      <div id="pz-editor-view" style="display:none"></div>
-    </div>
-  `;
+    <div style="text-align:center;padding:4rem 1rem;width:100%">
+      <div style="font-size:48px;margin-bottom:1rem">♟</div>
+      <h2 style="font-size:1.6rem;font-weight:700;color:var(--text);margin-bottom:.5rem">All puzzles solved!</h2>
+      <p style="color:var(--text2);margin-bottom:2rem">You've completed all 20 curated puzzles.</p>
+      <button class="pz-btn primary" style="max-width:220px;margin:0 auto" onclick="pzIndex=0;loadNextPuzzle()">Play again from start</button>
+      <br><br>
+      <button class="new-game-btn" style="max-width:220px;margin:0 auto" onclick="exitPuzzleMode()">↩ Back to menu</button>
+    </div>`;
 }
 
-function showSubMode(mode) {
-  document.getElementById('pz-solve-view').style.display  = mode === 'solve'  ? 'flex' : 'none';
-  document.getElementById('pz-editor-view').style.display = mode === 'editor' ? 'flex' : 'none';
-  document.getElementById('ptab-solve').classList.toggle('active',  mode === 'solve');
-  document.getElementById('ptab-editor').classList.toggle('active', mode === 'editor');
-
-  if (mode === 'solve'  && !pzPuzzle) loadNextPuzzle();
-  if (mode === 'editor' && !edChess)  initEditor();
-}
-
-// ── Solve Mode ─────────────────────────────────────────────────────────────
+// ── Solve — UI ───────────────────────────────────────────────────────────────
 
 function buildSolveUI() {
-  const total = CURATED_PUZZLES.length;
-  const progress = pzDynamic
-    ? `All ${total} solved · Generated #${pzDynCount}`
-    : `${Math.min(pzIndex + 1, total)} / ${total}`;
+  const total    = CURATED_PUZZLES.length;
+  const progress = Math.min(pzIndex, total);
+  const pct      = Math.round((progress / total) * 100);
+  const orient   = pzChess.turn();
+  const ranks    = orient === 'w' ? ['8','7','6','5','4','3','2','1'] : ['1','2','3','4','5','6','7','8'];
+  const files    = orient === 'w' ? ['a','b','c','d','e','f','g','h'] : ['h','g','f','e','d','c','b','a'];
 
-  document.getElementById('pz-solve-view').innerHTML = `
+  document.getElementById('game').innerHTML = `
     <div class="pz-layout">
       <div class="board-area">
         <div class="board-wrap">
-          <div class="rank-col" id="pz-ranks"></div>
+          <div class="rank-col">${ranks.map(r => `<div class="rank-lbl">${r}</div>`).join('')}</div>
           <div>
             <div id="pz-board"></div>
-            <div class="file-row" id="pz-files"></div>
+            <div class="file-row">${files.map(f => `<div class="file-lbl">${f}</div>`).join('')}</div>
           </div>
         </div>
       </div>
       <div class="side-panel">
         <div class="pcard">
           <div class="clbl">Progress</div>
-          <div class="pname" style="font-size:14px">${progress}</div>
-          <div class="pz-bar-wrap"><div class="pz-bar" style="width:${pzDynamic ? 100 : Math.round((pzIndex/total)*100)}%"></div></div>
+          <div class="pname" style="font-size:14px">${progress} / ${total}</div>
+          <div class="pz-bar-wrap"><div class="pz-bar" style="width:${pct}%"></div></div>
         </div>
         <div class="pcard">
           <div class="clbl">Puzzle</div>
-          <div class="pname" id="pz-title">${pzPuzzle ? pzPuzzle.title : ''}</div>
-          <div class="psub" id="pz-type">${pzPuzzle ? pzPuzzle.type : ''}</div>
-          <div class="pz-diff" id="pz-diff">${pzPuzzle ? diffStars(pzPuzzle.diff) : ''}</div>
+          <div class="pname">${pzPuzzle.title}</div>
+          <div class="psub">${pzPuzzle.type}</div>
+          <div class="pz-diff">${diffStars(pzPuzzle.diff)}</div>
         </div>
         <div class="pcard">
           <div class="clbl">Status</div>
@@ -109,8 +159,8 @@ function buildSolveUI() {
           <button class="new-game-btn" onclick="exitPuzzleMode()">↩ Back to menu</button>
         </div>
       </div>
-    </div>
-  `;
+    </div>`;
+
   renderPuzzleBoard();
   setPuzzleStatus('toMove');
 }
@@ -119,159 +169,65 @@ function diffStars(d) {
   return '★'.repeat(d) + '☆'.repeat(3 - d);
 }
 
-function loadNextPuzzle() {
-  pzOver = false;
-  pzSelectedSq = null;
-  pzLegalTargets = [];
-  pzLastMove = null;
+// ── Solve — Board ────────────────────────────────────────────────────────────
 
-  if (!pzDynamic) {
-    if (pzIndex >= CURATED_PUZZLES.length) {
-      pzDynamic = true;
-      pzDynCount = 0;
-    }
-  }
-
-  if (pzDynamic) {
-    setPuzzleStatusDirect('<span class="thnk">Generating puzzle<span>.</span><span>.</span><span>.</span></span>');
-    // Use setTimeout to allow the UI to update before blocking computation
-    setTimeout(() => {
-      const puzzle = generatePuzzle(50);
-      if (puzzle) {
-        pzDynCount++;
-        loadPuzzle(puzzle);
-      } else {
-        setPuzzleStatusDirect('Could not generate a puzzle. Try again.');
-        document.getElementById('pz-next-btn').style.display = 'block';
-      }
-    }, 30);
-    return;
-  }
-
-  loadPuzzle(CURATED_PUZZLES[pzIndex]);
-  pzIndex++;
-}
-
-function loadPuzzle(puzzle) {
-  pzPuzzle = puzzle;
-  pzChess = new Chess();
-  pzChess.load(puzzle.fen);
-  buildSolveUI();
-}
-
-function loadSharedPuzzle(fen) {
-  showSubMode('solve');
-  try {
-    const testGame = new Chess();
-    if (!testGame.load(fen)) throw new Error('invalid fen');
-    const matingMove = findMateInOne(testGame);
-    const puzzle = {
-      id: 'shared',
-      title: 'Shared Puzzle',
-      type: matingMove ? 'Mate in 1' : 'Custom Position',
-      diff: 2,
-      fen: fen,
-      solution: matingMove ? [matingMove] : [],
-      hint: 'This puzzle was shared via link.'
-    };
-    loadPuzzle(puzzle);
-    // Clear the URL param without reload
-    const url = new URL(window.location);
-    url.searchParams.delete('puzzle');
-    history.replaceState({}, '', url);
-  } catch (e) {
-    loadNextPuzzle();
-  }
-}
-
-// ── Board Rendering ─────────────────────────────────────────────────────────
-
-function getPuzzleOrientation() {
-  // Board is shown from the perspective of the side to move
-  return pzPuzzle && pzChess ? pzChess.turn() : 'w';
-}
-
-function pzSquareFromIndex(row, col) {
-  const files = 'abcdefgh';
-  const orientation = getPuzzleOrientation();
-  return orientation === 'w'
-    ? files[col] + (8 - row)
-    : files[7 - col] + (row + 1);
+function pzSqFromIndex(row, col, orient) {
+  const f = 'abcdefgh';
+  return orient === 'w' ? f[col] + (8 - row) : f[7 - col] + (row + 1);
 }
 
 function renderPuzzleBoard() {
   const boardEl = document.getElementById('pz-board');
-  const ranksEl = document.getElementById('pz-ranks');
-  const filesEl = document.getElementById('pz-files');
   if (!boardEl) return;
-
-  const orientation = getPuzzleOrientation();
-  const ranks = orientation === 'w'
-    ? ['8','7','6','5','4','3','2','1']
-    : ['1','2','3','4','5','6','7','8'];
-  const files = orientation === 'w'
-    ? ['a','b','c','d','e','f','g','h']
-    : ['h','g','f','e','d','c','b','a'];
-
-  if (ranksEl) ranksEl.innerHTML = ranks.map(r => `<div class="rank-lbl">${r}</div>`).join('');
-  if (filesEl) filesEl.innerHTML = files.map(f => `<div class="file-lbl">${f}</div>`).join('');
-
-  const board = pzChess.board();
-  let html = '';
-
-  // Check indicator
+  const orient = pzChess.turn();
+  const board  = pzChess.board();
   let checkedSq = null;
+
   if (pzChess.in_check()) {
     const turn = pzChess.turn();
-    for (let r = 0; r < 8; r++) {
+    for (let r = 0; r < 8; r++)
       for (let c = 0; c < 8; c++) {
         const p = board[r][c];
-        if (p && p.type === 'k' && p.color === turn) {
-          checkedSq = 'abcdefgh'[c] + (8 - r);
-        }
+        if (p && p.type === 'k' && p.color === turn) checkedSq = 'abcdefgh'[c] + (8 - r);
       }
-    }
   }
 
+  let html = '';
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
-      const sq = pzSquareFromIndex(row, col);
-      const piece = orientation === 'w' ? board[row][col] : board[7 - row][7 - col];
-      const isLight = (row + col) % 2 === 0;
+      const sq    = pzSqFromIndex(row, col, orient);
+      const piece = orient === 'w' ? board[row][col] : board[7-row][7-col];
+      const lt    = (row + col) % 2 === 0;
+      let cls     = 'sq ' + (lt ? 'lt' : 'dk');
 
-      let cls = 'sq ' + (isLight ? 'lt' : 'dk');
       if (!pzOver) {
-        if (sq === pzSelectedSq)                     cls += ' sel';
-        else if (pzLastMove && sq === pzLastMove.from) cls += ' lf';
-        else if (pzLastMove && sq === pzLastMove.to)   cls += ' lt2';
-        if (sq === checkedSq)                          cls += ' chk';
-        if (pzLegalTargets.includes(sq))               cls += piece ? ' hr' : ' hd';
+        if (sq === pzSelectedSq)                        cls += ' sel';
+        else if (pzLastMove && sq === pzLastMove.from)  cls += ' lf';
+        else if (pzLastMove && sq === pzLastMove.to)    cls += ' lt2';
+        if (sq === checkedSq)                           cls += ' chk';
+        if (pzLegalTargets.includes(sq))                cls += piece ? ' hr' : ' hd';
       } else {
         if (pzLastMove && sq === pzLastMove.from) cls += ' lf';
         if (pzLastMove && sq === pzLastMove.to)   cls += ' lt2';
       }
 
-      const pieceHTML = piece
-        ? `<span class="piece ${piece.color === 'w' ? 'wp' : 'bp'}">${SYMBOLS[piece.color][piece.type]}</span>`
-        : '';
-
-      html += `<div class="${cls}" onclick="onPuzzleSquareClick('${sq}')">${pieceHTML}</div>`;
+      const ph = piece ? getPieceSVG(piece.color, piece.type) : '';
+      html += `<div class="${cls}" onclick="onPuzzleSquareClick('${sq}')">${ph}</div>`;
     }
   }
   boardEl.innerHTML = html;
 }
 
-// ── Interaction ─────────────────────────────────────────────────────────────
+// ── Solve — Interaction ──────────────────────────────────────────────────────
 
 function onPuzzleSquareClick(sq) {
   if (pzOver || !pzChess || !pzPuzzle) return;
-
   const humanColor = pzChess.turn();
   const piece = pzChess.get(sq);
 
   if (!pzSelectedSq) {
     if (piece && piece.color === humanColor) {
-      pzSelectedSq = sq;
+      pzSelectedSq   = sq;
       pzLegalTargets = pzChess.moves({ square: sq, verbose: true }).map(m => m.to);
       renderPuzzleBoard();
     }
@@ -281,8 +237,8 @@ function onPuzzleSquareClick(sq) {
   if (pzLegalTargets.includes(sq)) {
     const move = pzChess.move({ from: pzSelectedSq, to: sq, promotion: 'q' });
     if (move) {
-      pzLastMove = { from: move.from, to: move.to };
-      pzSelectedSq = null;
+      pzLastMove     = { from: move.from, to: move.to };
+      pzSelectedSq   = null;
       pzLegalTargets = [];
       renderPuzzleBoard();
       checkPuzzleResult(move.san);
@@ -291,46 +247,35 @@ function onPuzzleSquareClick(sq) {
   }
 
   if (piece && piece.color === humanColor) {
-    pzSelectedSq = sq;
+    pzSelectedSq   = sq;
     pzLegalTargets = pzChess.moves({ square: sq, verbose: true }).map(m => m.to);
   } else {
-    pzSelectedSq = null;
+    pzSelectedSq   = null;
     pzLegalTargets = [];
   }
   renderPuzzleBoard();
 }
 
 function checkPuzzleResult(moveSan) {
-  const expected = pzPuzzle.solution[0];
-  const played = moveSan.replace(/[+#!?]/g, '');
-  const target = expected.replace(/[+#!?]/g, '');
-
-  if (played === target || pzChess.in_checkmate()) {
-    // Correct
+  const played   = moveSan.replace(/[+#!?]/g, '');
+  const expected = (pzPuzzle.solution[0] || '').replace(/[+#!?]/g, '');
+  if (played === expected || pzChess.in_checkmate()) {
     pzOver = true;
-    pzSolved++;
-    pzCompleted.add(pzPuzzle.id);
-    showSolvedBanner();
+    setPuzzleStatus('solved');
+    document.getElementById('pz-next-btn').style.display = 'block';
+    document.getElementById('pz-hint-btn').style.display = 'none';
+    const board = document.getElementById('pz-board');
+    if (board) {
+      board.style.transition = 'box-shadow .3s';
+      board.style.boxShadow  = '0 0 0 3px var(--success)';
+      setTimeout(() => { if (board) board.style.boxShadow = ''; }, 1500);
+    }
   } else {
-    // Wrong — undo
     pzChess.undo();
     pzLastMove = null;
     renderPuzzleBoard();
     setPuzzleStatus('wrong');
     setTimeout(() => setPuzzleStatus('toMove'), 1800);
-  }
-}
-
-function showSolvedBanner() {
-  setPuzzleStatus('solved');
-  document.getElementById('pz-next-btn').style.display = 'block';
-  document.getElementById('pz-hint-btn').style.display = 'none';
-  // Highlight the board
-  const board = document.getElementById('pz-board');
-  if (board) {
-    board.style.transition = 'box-shadow .3s';
-    board.style.boxShadow = '0 0 0 3px var(--success)';
-    setTimeout(() => { if (board) board.style.boxShadow = ''; }, 1500);
   }
 }
 
@@ -353,7 +298,7 @@ function showHint() {
 }
 
 function setPuzzleStatus(state) {
-  const el = document.getElementById('pz-status');
+  const el   = document.getElementById('pz-status');
   if (!el) return;
   const turn = pzChess ? (pzChess.turn() === 'w' ? 'White' : 'Black') : '';
   const msgs = {
@@ -362,57 +307,24 @@ function setPuzzleStatus(state) {
     solved:  '✓ Correct! Well done.',
     skipped: 'Puzzle skipped.',
   };
-  el.innerHTML = msgs[state] || state;
-  el.className = state === 'solved' ? 'pz-status-ok' : state === 'wrong' ? 'pz-status-err' : '';
+  el.innerHTML  = msgs[state] || state;
+  el.className  = state === 'solved' ? 'pz-status-ok' : state === 'wrong' ? 'pz-status-err' : '';
 }
 
-function setPuzzleStatusDirect(html) {
-  const el = document.getElementById('pz-status');
-  if (el) el.innerHTML = html;
-}
-
-function exitPuzzleMode() {
-  pzPuzzle = null;
-  pzIndex = 0;
-  pzDynamic = false;
-  document.getElementById('game').style.display = 'none';
-  document.getElementById('game').innerHTML = '';
-  document.getElementById('setup').style.display = 'block';
-}
-
-// ── Position Editor ─────────────────────────────────────────────────────────
-
-const EDITOR_PIECES = [
-  { color: 'w', type: 'k' }, { color: 'w', type: 'q' }, { color: 'w', type: 'r' },
-  { color: 'w', type: 'b' }, { color: 'w', type: 'n' }, { color: 'w', type: 'p' },
-  { color: 'b', type: 'k' }, { color: 'b', type: 'q' }, { color: 'b', type: 'r' },
-  { color: 'b', type: 'b' }, { color: 'b', type: 'n' }, { color: 'b', type: 'p' },
-];
-
-function initEditor() {
-  edChess = new Chess();
-  edChess.clear();
-  edTurn = 'w';
-  edSelectedPiece = null;
-  buildEditorUI();
-}
+// ── Position Editor ──────────────────────────────────────────────────────────
 
 function buildEditorUI() {
-  const files = ['a','b','c','d','e','f','g','h'];
   const ranks = ['8','7','6','5','4','3','2','1'];
+  const files = ['a','b','c','d','e','f','g','h'];
 
-  document.getElementById('pz-editor-view').innerHTML = `
+  document.getElementById('game').innerHTML = `
     <div class="pz-layout">
       <div class="board-area">
         <div class="board-wrap">
-          <div class="rank-col">
-            ${ranks.map(r => `<div class="rank-lbl">${r}</div>`).join('')}
-          </div>
+          <div class="rank-col">${ranks.map(r => `<div class="rank-lbl">${r}</div>`).join('')}</div>
           <div>
             <div id="ed-board"></div>
-            <div class="file-row">
-              ${files.map(f => `<div class="file-lbl">${f}</div>`).join('')}
-            </div>
+            <div class="file-row">${files.map(f => `<div class="file-lbl">${f}</div>`).join('')}</div>
           </div>
         </div>
       </div>
@@ -421,11 +333,10 @@ function buildEditorUI() {
           <div class="clbl">Pieces</div>
           <div class="piece-palette" id="ed-palette">
             ${EDITOR_PIECES.map(p => `
-              <div class="pal-piece ${p.color === 'w' ? 'wp' : 'bp'}"
-                   data-color="${p.color}" data-type="${p.type}"
+              <div class="pal-piece" data-color="${p.color}" data-type="${p.type}"
                    onclick="selectEditorPiece('${p.color}','${p.type}')"
-                   title="${p.color === 'w' ? 'White' : 'Black'} ${p.type.toUpperCase()}">
-                ${SYMBOLS[p.color][p.type]}
+                   title="${p.color==='w'?'White':'Black'} ${p.type.toUpperCase()}">
+                ${getPieceSVG(p.color, p.type, 28)}
               </div>`).join('')}
             <div class="pal-piece pal-erase" onclick="selectEditorPiece(null,null)" title="Erase">✕</div>
           </div>
@@ -433,8 +344,8 @@ function buildEditorUI() {
         <div class="pcard">
           <div class="clbl">Side to move</div>
           <div class="turn-toggle">
-            <button class="turn-btn ${edTurn==='w'?'active':''}" onclick="setEditorTurn('w')">White</button>
-            <button class="turn-btn ${edTurn==='b'?'active':''}" onclick="setEditorTurn('b')">Black</button>
+            <button class="turn-btn active" id="turn-w" onclick="setEditorTurn('w')">White</button>
+            <button class="turn-btn" id="turn-b" onclick="setEditorTurn('b')">Black</button>
           </div>
         </div>
         <div class="pcard">
@@ -446,47 +357,39 @@ function buildEditorUI() {
             <button class="pz-btn" onclick="clearEditor()">Clear board</button>
           </div>
         </div>
-        <div class="pcard" id="ed-status-card">
+        <div class="pcard">
           <div class="clbl">Info</div>
-          <div id="ed-status" class="psub">Click a piece, then click the board to place it. Click an occupied square to remove.</div>
+          <div id="ed-status" class="psub">Select a piece from the palette, then click the board to place it.</div>
         </div>
+        <button class="new-game-btn" onclick="exitPuzzleMode()">↩ Back to menu</button>
       </div>
-    </div>
-  `;
+    </div>`;
+
   renderEditorBoard();
 }
 
 function selectEditorPiece(color, type) {
   edSelectedPiece = color ? { color, type } : null;
-  // Update palette highlight
   document.querySelectorAll('.pal-piece').forEach(el => {
     el.classList.toggle('pal-active',
       (el.dataset.color === color && el.dataset.type === type) ||
-      (!color && el.classList.contains('pal-erase'))
-    );
+      (!color && el.classList.contains('pal-erase')));
   });
 }
 
 function setEditorTurn(color) {
   edTurn = color;
-  document.querySelectorAll('.turn-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent.trim().toLowerCase()[0] === color);
-  });
+  document.getElementById('turn-w').classList.toggle('active', color === 'w');
+  document.getElementById('turn-b').classList.toggle('active', color === 'b');
 }
 
 function onEditorSquareClick(sq) {
   if (!edChess) return;
   const existing = edChess.get(sq);
-
   if (!edSelectedPiece) {
-    // Remove piece on square
-    if (existing) {
-      edChess.remove(sq);
-      renderEditorBoard();
-    }
+    if (existing) { edChess.remove(sq); renderEditorBoard(); }
     return;
   }
-
   if (existing) edChess.remove(sq);
   edChess.put({ type: edSelectedPiece.type, color: edSelectedPiece.color }, sq);
   renderEditorBoard();
@@ -497,113 +400,67 @@ function renderEditorBoard() {
   if (!boardEl) return;
   const board = edChess.board();
   let html = '';
-
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
-      const files = 'abcdefgh';
-      const sq = files[col] + (8 - row);
+      const sq    = 'abcdefgh'[col] + (8 - row);
       const piece = board[row][col];
-      const isLight = (row + col) % 2 === 0;
-      const cls = 'sq ' + (isLight ? 'lt' : 'dk') + ' ed-sq';
-      const pieceHTML = piece
-        ? `<span class="piece ${piece.color === 'w' ? 'wp' : 'bp'}">${SYMBOLS[piece.color][piece.type]}</span>`
-        : '';
-      html += `<div class="${cls}" onclick="onEditorSquareClick('${sq}')">${pieceHTML}</div>`;
+      const lt    = (row + col) % 2 === 0;
+      const ph    = piece ? getPieceSVG(piece.color, piece.type) : '';
+      html += `<div class="sq ${lt?'lt':'dk'} ed-sq" onclick="onEditorSquareClick('${sq}')">${ph}</div>`;
     }
   }
   boardEl.innerHTML = html;
 }
 
 function getEditorFen() {
-  // Build FEN manually from board state + turn
-  // chess.js .fen() on a cleared board may be invalid; use it anyway and patch turn
-  let fen = edChess.fen();
-  // Replace the turn portion (2nd field)
-  const parts = fen.split(' ');
+  const parts = edChess.fen().split(' ');
   parts[1] = edTurn;
-  parts[2] = '-'; // castling
-  parts[3] = '-'; // en passant
-  parts[4] = '0';
-  parts[5] = '1';
+  parts[2] = '-'; parts[3] = '-'; parts[4] = '0'; parts[5] = '1';
   return parts.join(' ');
 }
 
 function playEditorPosition() {
-  const fen = getEditorFen();
+  const fen  = getEditorFen();
   const test = new Chess();
-  if (!test.load(fen)) {
-    setEditorStatus('Invalid position — make sure both kings are present.');
-    return;
-  }
-  // Launch vs-engine mode from this position
-  playerColor = edTurn;
-  gameMode = 'vs';
-  chess = new Chess();
-  chess.load(fen);
+  if (!test.load(fen)) { setEditorStatus('Invalid position — make sure both kings are present.'); return; }
+  playerColor = edTurn; gameMode = 'vs';
+  chess = new Chess(); chess.load(fen);
   selectedSq = null; legalTargets = []; lastMove = null;
   engineThinking = false; gameOver = false;
-
   document.getElementById('setup').style.display = 'none';
-  document.getElementById('game').style.display = 'flex';
-  document.getElementById('game').style.flexWrap = 'wrap';
-  document.getElementById('game').innerHTML = '';
-  buildGameUI();
-  renderBoard();
-
+  const gameEl = document.getElementById('game');
+  gameEl.style.display = 'flex'; gameEl.style.flexWrap = 'wrap'; gameEl.innerHTML = '';
+  buildGameUI(); renderBoard();
   const engineColor = playerColor === 'w' ? 'b' : 'w';
-  if (chess.turn() === engineColor) {
-    engineThinking = true;
-    renderBoard();
-    setTimeout(runEngine, 80);
-  }
+  if (chess.turn() === engineColor) { engineThinking = true; renderBoard(); setTimeout(runEngine, 80); }
 }
 
 function solveEditorPosition() {
-  const fen = getEditorFen();
+  const fen  = getEditorFen();
   const test = new Chess();
-  if (!test.load(fen)) {
-    setEditorStatus('Invalid position.');
-    return;
-  }
-  const matingMove = findMateInOne(test);
-  const puzzle = {
-    id: 'custom-' + Date.now(),
-    title: 'Custom Puzzle',
-    type: matingMove ? 'Mate in 1' : 'Custom Position',
-    diff: 2,
-    fen,
-    solution: matingMove ? [matingMove] : [],
-    hint: matingMove ? 'There is a checkmate in one move.' : 'Analyze the position.'
-  };
-  pzPuzzle = null;
-  showSubMode('solve');
-  loadPuzzle(puzzle);
+  if (!test.load(fen)) { setEditorStatus('Invalid position.'); return; }
+  const mate = findMateInOne(test);
+  document.getElementById('game').innerHTML = '';
+  pzOver = false; pzSelectedSq = null; pzLegalTargets = []; pzLastMove = null;
+  loadPuzzle({
+    id: 'custom-' + Date.now(), title: 'Custom Puzzle',
+    type: mate ? 'Mate in 1' : 'Custom Position',
+    diff: 2, fen,
+    solution: mate ? [mate] : [],
+    hint: mate ? 'There is a checkmate in one move.' : 'Find the best move.'
+  });
 }
 
 function copyShareLink() {
-  const fen = getEditorFen();
+  const fen  = getEditorFen();
   const test = new Chess();
-  if (!test.load(fen)) {
-    setEditorStatus('Invalid position — cannot share.');
-    return;
-  }
+  if (!test.load(fen)) { setEditorStatus('Invalid position — cannot share.'); return; }
   const url = new URL(window.location.href);
   url.searchParams.set('puzzle', fen);
   navigator.clipboard.writeText(url.toString())
     .then(() => setEditorStatus('Link copied to clipboard!'))
-    .catch(() => {
-      // Fallback: show the URL
-      setEditorStatus('Copy this link: ' + url.toString());
-    });
+    .catch(() => setEditorStatus('Copy this link: ' + url.toString()));
 }
 
-function clearEditor() {
-  edChess.clear();
-  renderEditorBoard();
-  setEditorStatus('Board cleared.');
-}
-
-function setEditorStatus(msg) {
-  const el = document.getElementById('ed-status');
-  if (el) el.textContent = msg;
-}
+function clearEditor() { edChess.clear(); renderEditorBoard(); setEditorStatus('Board cleared.'); }
+function setEditorStatus(msg) { const el = document.getElementById('ed-status'); if (el) el.textContent = msg; }

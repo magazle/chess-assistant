@@ -1,12 +1,8 @@
 /**
  * Chess Assistant — UI
- * Two modes: Engine Assist (engine plays your pieces) and vs Engine (you play against the engine)
+ * Two modes: Engine Assist and vs Engine
+ * Uses getPieceSVG() from pieces.js — no Unicode symbols
  */
-
-const SYMBOLS = {
-  w: { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' },
-  b: { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' }
-};
 
 const DEPTH_LABELS = {
   2: { label: 'Beginner',     desc: 'Looks 2 moves ahead. Avoids immediate blunders but misses short combinations. Very fast.' },
@@ -15,36 +11,36 @@ const DEPTH_LABELS = {
   5: { label: 'Strong',       desc: 'Looks 5 moves ahead. Calculates deep combinations and defends precisely. Can take up to 15 seconds per move.' }
 };
 
-// gameMode: 'assist' = engine plays your pieces, you move opponent
-//           'vs'     = you play your pieces, engine plays opponent
-let chess        = null;
-let playerColor  = null;
-let gameMode     = null;
-let selectedSq   = null;
-let legalTargets = [];
-let lastMove     = null;
+let chess          = null;
+let playerColor    = null;
+let gameMode       = null;
+let selectedSq     = null;
+let legalTargets   = [];
+let lastMove       = null;
 let engineThinking = false;
-let gameOver     = false;
-let engineDepth  = 3;
+let gameOver       = false;
+let engineDepth    = 3;
 
 // ── Game lifecycle ──────────────────────────────────────────────────────────
 
 function startGame(color, mode) {
-  playerColor = color;
-  gameMode    = mode; // 'assist' | 'vs'
-  chess       = new Chess();
-  selectedSq  = null;
-  legalTargets = [];
-  lastMove    = null;
+  playerColor    = color;
+  gameMode       = mode;
+  chess          = new Chess();
+  selectedSq     = null;
+  legalTargets   = [];
+  lastMove       = null;
   engineThinking = false;
-  gameOver    = false;
+  gameOver       = false;
 
   document.getElementById('setup').style.display = 'none';
+  const gameEl = document.getElementById('game');
+  gameEl.style.display = 'flex';
+  gameEl.style.flexWrap = 'wrap';
+  gameEl.innerHTML = '';
   buildGameUI();
   renderBoard();
 
-  // In 'assist' mode engine plays playerColor, so it goes first if playerColor is white.
-  // In 'vs' mode engine plays opponent, so it goes first only if player chose black.
   const engineColor = mode === 'assist' ? playerColor : (playerColor === 'w' ? 'b' : 'w');
   if (chess.turn() === engineColor) {
     engineThinking = true;
@@ -68,99 +64,72 @@ function depthDescHTML(d) {
 
 function buildGameUI() {
   const gameEl = document.getElementById('game');
-  gameEl.style.display = 'flex';
-
-  const ranks = playerColor === 'w'
-    ? ['8','7','6','5','4','3','2','1']
-    : ['1','2','3','4','5','6','7','8'];
-  const files = playerColor === 'w'
-    ? ['a','b','c','d','e','f','g','h']
-    : ['h','g','f','e','d','c','b','a'];
-
-  const modeLabel  = gameMode === 'assist'
-    ? 'Engine Assist'
-    : 'vs Engine';
-  const modeSub = gameMode === 'assist'
-    ? 'Engine moves your pieces'
-    : 'You play, engine plays opponent';
+  const ranks = playerColor === 'w' ? ['8','7','6','5','4','3','2','1'] : ['1','2','3','4','5','6','7','8'];
+  const files = playerColor === 'w' ? ['a','b','c','d','e','f','g','h'] : ['h','g','f','e','d','c','b','a'];
+  const modeLabel = gameMode === 'assist' ? 'Engine Assist' : 'vs Engine';
+  const modeSub   = gameMode === 'assist' ? 'Engine moves your pieces' : 'You play, engine plays opponent';
 
   gameEl.innerHTML = `
     <div class="board-area">
       <div class="board-wrap">
-        <div class="rank-col">
-          ${ranks.map(r => `<div class="rank-lbl">${r}</div>`).join('')}
-        </div>
+        <div class="rank-col">${ranks.map(r => `<div class="rank-lbl">${r}</div>`).join('')}</div>
         <div>
           <div id="board"></div>
-          <div class="file-row">
-            ${files.map(f => `<div class="file-lbl">${f}</div>`).join('')}
-          </div>
+          <div class="file-row">${files.map(f => `<div class="file-lbl">${f}</div>`).join('')}</div>
         </div>
       </div>
     </div>
-
     <div class="side-panel">
       <div class="pcard">
         <div class="clbl">Playing as</div>
-        <div class="pname">${playerColor === 'w' ? '♔ White' : '♚ Black'}</div>
+        <div class="pname">${playerColor === 'w' ? 'White' : 'Black'}</div>
         <div class="psub">${modeSub}</div>
         <div class="mode-badge">${modeLabel}</div>
       </div>
-
       <div class="pcard">
         <div class="clbl">Engine strength</div>
         <div class="depth-row">
           <label>Depth</label>
           <input type="range" min="2" max="5" value="${engineDepth}" id="depthSlider"
-            oninput="engineDepth = +this.value; document.getElementById('depthVal').textContent = this.value; document.getElementById('depthDesc').innerHTML = depthDescHTML(+this.value)">
+            oninput="engineDepth=+this.value;document.getElementById('depthVal').textContent=this.value;document.getElementById('depthDesc').innerHTML=depthDescHTML(+this.value)">
           <span class="depth-val" id="depthVal">${engineDepth}</span>
         </div>
         <div id="depthDesc">${depthDescHTML(engineDepth)}</div>
       </div>
-
       <div class="pcard">
         <div class="clbl">Status</div>
         <div id="status-text"></div>
       </div>
-
       <div class="pcard history-card">
         <div class="clbl">Moves</div>
         <div id="move-list"></div>
       </div>
-
       <div id="gameover-slot"></div>
-
       <button class="new-game-btn" onclick="resetGame()">↩ New game</button>
-    </div>
-  `;
+    </div>`;
 }
 
 // ── Board Rendering ─────────────────────────────────────────────────────────
 
 function squareFromIndex(row, col) {
-  const files = 'abcdefgh';
-  return playerColor === 'w'
-    ? files[col] + (8 - row)
-    : files[7 - col] + (row + 1);
+  const f = 'abcdefgh';
+  return playerColor === 'w' ? f[col] + (8 - row) : f[7 - col] + (row + 1);
 }
 
 function getCheckedKingSquare() {
   if (!chess.in_check()) return null;
-  const board = chess.board();
-  const turn  = chess.turn();
-  for (let r = 0; r < 8; r++) {
+  const board = chess.board(), turn = chess.turn();
+  for (let r = 0; r < 8; r++)
     for (let c = 0; c < 8; c++) {
       const p = board[r][c];
       if (p && p.type === 'k' && p.color === turn) return 'abcdefgh'[c] + (8 - r);
     }
-  }
   return null;
 }
 
 function renderBoard() {
   const boardEl = document.getElementById('board');
   if (!boardEl) return;
-
   const checkedSq = getCheckedKingSquare();
   const board = chess.board();
   let html = '';
@@ -168,24 +137,20 @@ function renderBoard() {
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       const sq    = squareFromIndex(row, col);
-      const piece = playerColor === 'w' ? board[row][col] : board[7 - row][7 - col];
-      const isLight = (row + col) % 2 === 0;
+      const piece = playerColor === 'w' ? board[row][col] : board[7-row][7-col];
+      const lt    = (row + col) % 2 === 0;
+      let cls     = 'sq ' + (lt ? 'lt' : 'dk');
 
-      let classes = 'sq ' + (isLight ? 'lt' : 'dk');
-      if (sq === selectedSq) classes += ' sel';
-      else if (lastMove && sq === lastMove.from) classes += ' lf';
-      else if (lastMove && sq === lastMove.to)   classes += ' lt2';
-      if (sq === checkedSq) classes += ' chk';
-      if (legalTargets.includes(sq)) classes += piece ? ' hr' : ' hd';
+      if (sq === selectedSq)                       cls += ' sel';
+      else if (lastMove && sq === lastMove.from)   cls += ' lf';
+      else if (lastMove && sq === lastMove.to)     cls += ' lt2';
+      if (sq === checkedSq)                        cls += ' chk';
+      if (legalTargets.includes(sq))               cls += piece ? ' hr' : ' hd';
 
-      const pieceHTML = piece
-        ? `<span class="piece ${piece.color === 'w' ? 'wp' : 'bp'}">${SYMBOLS[piece.color][piece.type]}</span>`
-        : '';
-
-      html += `<div class="${classes}" onclick="onSquareClick('${sq}')">${pieceHTML}</div>`;
+      const ph = piece ? getPieceSVG(piece.color, piece.type) : '';
+      html += `<div class="${cls}" onclick="onSquareClick('${sq}')">${ph}</div>`;
     }
   }
-
   boardEl.innerHTML = html;
   updateStatus();
   updateMoveHistory();
@@ -195,14 +160,8 @@ function renderBoard() {
 
 function onSquareClick(sq) {
   if (engineThinking || gameOver) return;
-
-  // Determine which color the human moves in this game mode
-  const humanColor = gameMode === 'assist'
-    ? (playerColor === 'w' ? 'b' : 'w')  // assist: human moves opponent
-    : playerColor;                         // vs: human moves own pieces
-
+  const humanColor = gameMode === 'assist' ? (playerColor === 'w' ? 'b' : 'w') : playerColor;
   if (chess.turn() !== humanColor) return;
-
   const piece = chess.get(sq);
 
   if (!selectedSq) {
@@ -221,15 +180,8 @@ function onSquareClick(sq) {
       selectedSq   = null;
       legalTargets = [];
       renderBoard();
-
-      if (chess.game_over()) {
-        gameOver = true;
-        setTimeout(showGameOverBanner, 400);
-      } else {
-        engineThinking = true;
-        renderBoard();
-        setTimeout(runEngine, 30);
-      }
+      if (chess.game_over()) { gameOver = true; setTimeout(showGameOverBanner, 400); }
+      else { engineThinking = true; renderBoard(); setTimeout(runEngine, 30); }
       return;
     }
   }
@@ -247,10 +199,7 @@ function onSquareClick(sq) {
 // ── Engine ──────────────────────────────────────────────────────────────────
 
 function runEngine() {
-  const engineColor = gameMode === 'assist'
-    ? playerColor
-    : (playerColor === 'w' ? 'b' : 'w');
-
+  const engineColor = gameMode === 'assist' ? playerColor : (playerColor === 'w' ? 'b' : 'w');
   const best = getBestMove(chess, engineDepth, engineColor);
   if (best) {
     const result = chess.move(best);
@@ -258,11 +207,7 @@ function runEngine() {
   }
   engineThinking = false;
   renderBoard();
-
-  if (chess.game_over()) {
-    gameOver = true;
-    setTimeout(showGameOverBanner, 400);
-  }
+  if (chess.game_over()) { gameOver = true; setTimeout(showGameOverBanner, 400); }
 }
 
 // ── Status & History ────────────────────────────────────────────────────────
@@ -270,55 +215,30 @@ function runEngine() {
 function updateStatus() {
   const el = document.getElementById('status-text');
   if (!el) return;
+  const humanColor = gameMode === 'assist' ? (playerColor === 'w' ? 'b' : 'w') : playerColor;
 
-  const humanColor = gameMode === 'assist'
-    ? (playerColor === 'w' ? 'b' : 'w')
-    : playerColor;
-
-  if (engineThinking) {
-    el.innerHTML = '<span class="thnk">Engine calculating<span>.</span><span>.</span><span>.</span></span>';
-    return;
-  }
-  if (chess.in_checkmate()) {
-    el.textContent = `Checkmate — ${chess.turn() === 'w' ? 'Black' : 'White'} wins`;
-    return;
-  }
-  if (chess.in_draw())  { el.textContent = 'Draw'; return; }
-  if (chess.in_check()) {
-    el.textContent = `${chess.turn() === 'w' ? 'White' : 'Black'} is in check!`;
-    return;
-  }
-  if (chess.turn() === humanColor) {
-    el.textContent = gameMode === 'assist' ? "Move the opponent's pieces" : 'Your turn';
-  } else {
-    el.textContent = 'Engine is thinking…';
-  }
+  if (engineThinking) { el.innerHTML = '<span class="thnk">Engine calculating<span>.</span><span>.</span><span>.</span></span>'; return; }
+  if (chess.in_checkmate()) { el.textContent = `Checkmate — ${chess.turn() === 'w' ? 'Black' : 'White'} wins`; return; }
+  if (chess.in_draw())      { el.textContent = 'Draw'; return; }
+  if (chess.in_check())     { el.textContent = `${chess.turn() === 'w' ? 'White' : 'Black'} is in check!`; return; }
+  el.textContent = chess.turn() === humanColor
+    ? (gameMode === 'assist' ? "Move the opponent's pieces" : 'Your turn')
+    : 'Engine is thinking…';
 }
 
 function updateMoveHistory() {
   const el = document.getElementById('move-list');
   if (!el) return;
-
   const history = chess.history();
-  if (!history.length) {
-    el.innerHTML = '<div class="no-moves">No moves yet</div>';
-    return;
-  }
+  if (!history.length) { el.innerHTML = '<div class="no-moves">No moves yet</div>'; return; }
 
-  // In assist mode: engine (playerColor) moves are highlighted
-  // In vs mode:     playerColor moves are highlighted
-  const whiteIsHighlighted = playerColor === 'w';
-
+  const whiteIsMe = playerColor === 'w';
   let html = '<div class="move-grid">';
   for (let i = 0; i < history.length; i += 2) {
-    const n  = Math.floor(i / 2) + 1;
-    const wm = history[i]     || '';
-    const bm = history[i + 1] || '';
-    html += `
-      <span class="move-num">${n}.</span>
-      <span class="move-san ${whiteIsHighlighted  ? 'mine' : 'opp'}">${wm}</span>
-      <span class="move-san ${!whiteIsHighlighted ? 'mine' : 'opp'}">${bm}</span>
-    `;
+    const n = Math.floor(i / 2) + 1;
+    html += `<span class="move-num">${n}.</span>
+      <span class="move-san ${whiteIsMe ? 'mine' : 'opp'}">${history[i] || ''}</span>
+      <span class="move-san ${!whiteIsMe ? 'mine' : 'opp'}">${history[i+1] || ''}</span>`;
   }
   html += '</div>';
   el.innerHTML = html;
@@ -328,23 +248,15 @@ function updateMoveHistory() {
 function showGameOverBanner() {
   const slot = document.getElementById('gameover-slot');
   if (!slot) return;
-
   let cls = 'draw', title = 'Draw', sub = 'The game is drawn';
-
   if (chess.in_checkmate()) {
     const winnerColor = chess.turn() === 'w' ? 'b' : 'w';
-    let playerWon;
-    if (gameMode === 'assist') {
-      playerWon = winnerColor === playerColor; // engine won = player won
-    } else {
-      playerWon = winnerColor === playerColor; // human won
-    }
+    const playerWon   = winnerColor === playerColor;
     cls   = playerWon ? 'win' : 'lose';
     title = playerWon ? 'Victory!' : 'Defeat';
     sub   = 'Checkmate';
-  } else if (chess.in_stalemate())            { sub = 'Stalemate'; }
-  else if (chess.in_threefold_repetition())   { sub = 'Threefold repetition'; }
-  else if (chess.insufficient_material())     { sub = 'Insufficient material'; }
-
+  } else if (chess.in_stalemate())          { sub = 'Stalemate'; }
+  else if (chess.in_threefold_repetition()) { sub = 'Threefold repetition'; }
+  else if (chess.insufficient_material())   { sub = 'Insufficient material'; }
   slot.innerHTML = `<div class="game-over ${cls}"><h3>${title}</h3><p>${sub}</p></div>`;
 }

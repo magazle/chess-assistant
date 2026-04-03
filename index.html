@@ -23,11 +23,11 @@
         <small>Classic mode — try to beat the engine</small>
         <div class="color-choice">
           <div class="cbtn" onclick="startGame('w','vs')">
-            <span class="pi wpi">♚</span>
+            <span class="cbtn-piece" id="icon-vs-w"></span>
             <span class="btnlbl">Play White</span>
           </div>
           <div class="cbtn" onclick="startGame('b','vs')">
-            <span class="pi bpi">♚</span>
+            <span class="cbtn-piece" id="icon-vs-b"></span>
             <span class="btnlbl">Play Black</span>
           </div>
         </div>
@@ -39,11 +39,11 @@
         <small>Study mode — reproduce positions and see how the engine continues</small>
         <div class="color-choice">
           <div class="cbtn" onclick="startGame('w','assist')">
-            <span class="pi wpi">♚</span>
+            <span class="cbtn-piece" id="icon-as-w"></span>
             <span class="btnlbl">White assisted</span>
           </div>
           <div class="cbtn" onclick="startGame('b','assist')">
-            <span class="pi bpi">♚</span>
+            <span class="cbtn-piece" id="icon-as-b"></span>
             <span class="btnlbl">Black assisted</span>
           </div>
         </div>
@@ -51,23 +51,27 @@
 
       <!-- Puzzles -->
       <div id="panel-puzzle" class="tab-panel" style="display:none">
-        <p>Solve 20 curated tactical puzzles. Once complete, the engine generates new ones dynamically.</p>
-        <small>Mate in 1 · Position editor · Share custom puzzles via link</small>
+        <p>Solve curated tactical positions or build your own.</p>
+        <small>Mate in 1 · Position editor · Share via link</small>
         <div class="color-choice">
-          <div class="cbtn wide" onclick="startPuzzleMode()">
-            <span style="font-size:44px">♟</span>
-            <span class="btnlbl">Start puzzles</span>
+          <div class="cbtn" onclick="startSolveMode()">
+            <span class="cbtn-piece" id="icon-pz-solve"></span>
+            <span class="btnlbl">Solve puzzles</span>
+          </div>
+          <div class="cbtn" onclick="startEditorMode()">
+            <span class="cbtn-piece" id="icon-pz-create"></span>
+            <span class="btnlbl">Create puzzles</span>
           </div>
         </div>
       </div>
 
-      <!-- Engine strength (shared across game modes) -->
+      <!-- Engine strength (hidden for puzzles) -->
       <div class="depth-setup" id="depth-setup-panel">
         <div class="clbl">Engine strength</div>
         <div class="depth-row">
           <label>Depth</label>
           <input type="range" min="2" max="5" value="3" id="setupDepth"
-            oninput="engineDepth = +this.value; document.getElementById('setupDepthVal').textContent = this.value; document.getElementById('setupDepthDesc').textContent = depthDescText(+this.value)">
+            oninput="engineDepth=+this.value;document.getElementById('setupDepthVal').textContent=this.value;document.getElementById('setupDepthDesc').textContent=depthDescText(+this.value)">
           <span class="depth-val" id="setupDepthVal">3</span>
         </div>
         <div class="depth-desc" id="setupDepthDesc">Intermediate — Looks 3 moves ahead. Spots basic tactics (forks, captures). Recommended for most players.</div>
@@ -79,6 +83,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
   <script src="engine.js"></script>
+  <script src="pieces.js"></script>
   <script src="puzzles.js"></script>
   <script src="ui.js"></script>
   <script src="puzzle-mode.js"></script>
@@ -93,12 +98,20 @@
     function depthDescText(d) {
       return DEPTH_LABELS[d].label + ' — ' + DEPTH_LABELS[d].desc;
     }
+    // Inject SVG piece icons into setup buttons
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('icon-vs-w').innerHTML    = getPieceSVG('w', 'k', 52);
+      document.getElementById('icon-vs-b').innerHTML    = getPieceSVG('b', 'k', 52);
+      document.getElementById('icon-as-w').innerHTML    = getPieceSVG('w', 'k', 52);
+      document.getElementById('icon-as-b').innerHTML    = getPieceSVG('b', 'k', 52);
+      document.getElementById('icon-pz-solve').innerHTML = getPieceSVG('w', 'n', 52);
+      document.getElementById('icon-pz-create').innerHTML = getPieceSVG('b', 'b', 52);
+    });
     // Load shared puzzle on page load
     window.addEventListener('load', () => {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('puzzle')) {
+      if (new URLSearchParams(window.location.search).get('puzzle')) {
         selectTab('puzzle');
-        startPuzzleMode();
+        startSolveMode();
       }
     });
   </script>

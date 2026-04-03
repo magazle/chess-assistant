@@ -68,9 +68,7 @@ body {
   transform: translateY(-2px);
 }
 
-.pi { font-size: 52px; line-height: 1; }
-.wpi { color: #fff; -webkit-text-stroke: 2px #333; }
-.bpi { color: #111; -webkit-text-stroke: 0.5px rgba(160,140,100,.4); }
+.cbtn-piece { display:flex; align-items:center; justify-content:center; }
 .btnlbl { font-size: 13px; font-weight: 600; color: var(--text2); }
 
 /* ── Game layout ── */
@@ -97,7 +95,7 @@ body {
 .file-row { display: flex; margin-top: 5px; }
 .file-lbl { width: 60px; text-align: center; font-size: 11px; color: var(--text3); }
 
-#board {
+#board, #pz-board, #ed-board {
   display: grid;
   grid-template-columns: repeat(8, 60px);
   grid-template-rows: repeat(8, 60px);
@@ -142,9 +140,6 @@ body {
   transition: transform .1s;
   position: relative; z-index: 1;
 }
-.sq:hover .piece { transform: scale(1.1); }
-.wp { color: #ffffff; -webkit-text-stroke: 2px #3a2010; filter: drop-shadow(0 2px 3px rgba(0,0,0,.55)); }
-.bp { color: #111; text-shadow: 0 1px 2px rgba(255,255,255,.15); }
 
 /* ── Side panel ── */
 .side-panel {
@@ -244,7 +239,7 @@ body {
 }
 
 @media (max-width: 620px) {
-  #board {
+  #board, #pz-board, #ed-board {
     grid-template-columns: repeat(8, 44px);
     grid-template-rows: repeat(8, 44px);
   }
