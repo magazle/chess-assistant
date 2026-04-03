@@ -17,10 +17,11 @@ let edSelectedPiece = null;
 let edTurn          = 'w';
 
 const EDITOR_PIECES = [
-  { color:'w', type:'k' },{ color:'w', type:'q' },{ color:'w', type:'r' },
-  { color:'w', type:'b' },{ color:'w', type:'n' },{ color:'w', type:'p' },
-  { color:'b', type:'k' },{ color:'b', type:'q' },{ color:'b', type:'r' },
-  { color:'b', type:'b' },{ color:'b', type:'n' },{ color:'b', type:'p' },
+  { color:'w', type:'k' }, { color:'w', type:'q' }, { color:'w', type:'r' },
+  { color:'w', type:'b' }, { color:'w', type:'n' },
+
+  { color:'b', type:'k' }, { color:'b', type:'q' }, { color:'b', type:'r' },
+  { color:'b', type:'b' }, { color:'b', type:'n' }
 ];
 
 function pieceImgHTML(color, type, className = 'piece') {
@@ -365,16 +366,28 @@ function buildEditorUI() {
         <div class="pcard">
           <div class="clbl">Pieces</div>
           <div class="piece-palette" id="ed-palette">
-            ${EDITOR_PIECES.map(p => `
-              <div class="pal-piece" data-color="${p.color}" data-type="${p.type}"
-                   onclick="selectEditorPiece('${p.color}','${p.type}')"
-                   title="${p.color === 'w' ? 'White' : 'Black'} ${p.type.toUpperCase()}">
-                ${pieceImgHTML(p.color, p.type, 'pal-piece-img')}
-              </div>
-            `).join('')}
-            <div class="pal-piece pal-erase" onclick="selectEditorPiece(null,null)" title="Erase">✕</div>
-          </div>
-        </div>
+  ${EDITOR_PIECES.map(p => `
+    <div class="pal-piece" data-color="${p.color}" data-type="${p.type}"
+         onclick="selectEditorPiece('${p.color}','${p.type}')"
+         title="${p.color === 'w' ? 'White' : 'Black'} ${p.type.toUpperCase()}">
+      ${pieceImgHTML(p.color, p.type, 'pal-piece-img')}
+    </div>
+  `).join('')}
+
+  <div class="pal-piece pal-erase" onclick="selectEditorPiece(null,null)" title="Erase">✕</div>
+  <div class="pal-spacer"></div>
+  <div class="pal-spacer"></div>
+
+  <div class="pal-piece" data-color="w" data-type="p"
+       onclick="selectEditorPiece('w','p')" title="White Pawn">
+    ${pieceImgHTML('w', 'p', 'pal-piece-img')}
+  </div>
+
+  <div class="pal-piece" data-color="b" data-type="p"
+       onclick="selectEditorPiece('b','p')" title="Black Pawn">
+    ${pieceImgHTML('b', 'p', 'pal-piece-img')}
+  </div>
+</div>
 
         <div class="pcard">
           <div class="clbl">Side to move</div>
