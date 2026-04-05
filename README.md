@@ -1,6 +1,7 @@
+```markdown
 # Chess Assistant
 
-A browser-based chess assistant where a real chess engine plays your pieces while you control the opponent. No backend, no AI API calls — pure JavaScript running in the browser.
+A browser-based chess assistant powered by a real minimax engine. No backend, no AI, no subscription — pure JavaScript in the browser.
 
 ![Chess Assistant](https://img.shields.io/badge/built%20with-vanilla%20JS-yellow) ![License](https://img.shields.io/badge/license-MIT-blue) ![Deploy](https://img.shields.io/badge/deploy-Vercel-black)
 
@@ -8,86 +9,81 @@ A browser-based chess assistant where a real chess engine plays your pieces whil
 
 ## What it does
 
-Chess Assistant combines multiple modes in a single lightweight app:
+Four modes, one lightweight app:
 
-- **Engine Assist** — the engine plays your pieces, you play the opponent
-- **Play vs Engine** — classic mode where you play against the engine
-- **Puzzle Mode** — solve curated positions or create your own
-- **Position Editor** — build any board and analyze or share it
-
-The goal is to learn from engine decisions, explore positions interactively, or just play fast games without friction.
+- **Play vs Engine** — classic game against the engine, five difficulty levels
+- **Opening Lab** — sandbox for studying positions and openings
+- **Correspondence** — the engine plays your pieces, you move the opponent's
+- **Puzzles** — build positions, add hints and solutions, share via link
 
 ---
 
 ## Game modes
 
-### Engine Assist
-- Engine plays your side
-- You control the opponent
-- Ideal for learning openings and ideas
-
 ### Play vs Engine
-- You play normally against the engine
-- Adjustable difficulty (depth 2–5)
+You move your pieces, the engine responds. Five difficulty levels from Beginner to Master, each combining search depth with a blunder rate that simulates how real players at that level actually make mistakes. Engine runs in a Web Worker so the interface never freezes during calculation.
 
-### Puzzle Mode
-- 20 curated puzzles (mate in 1)
-- Difficulty indicators (★)
-- Progress tracking
-- Hints and instant feedback
+### Opening Lab
+A sandbox, not a formal game. Load any position via FEN or PGN, pick a side, and the engine plays your color. Navigate back and forward through moves to explore alternative lines. Useful for replaying critical moments from your own games and seeing what the engine would have done differently.
+
+### Correspondence
+The engine plays your moves. You control the opponent's pieces. Load a position via PGN or start from scratch. The name comes from correspondence chess, a format where engine assistance has been historically accepted — but the use case is yours to decide.
 
 ### Position Editor
-- Place pieces freely on the board
-- Choose side to move
-- Convert position into:
-  - playable game
-  - puzzle
-  - shareable link
+Place pieces freely on an empty board, set the side to move, and optionally add a hint and a solution. Generate a shareable URL that includes the position, hint, and solution. Recipients see the board and can reveal hint and solution on demand via dedicated buttons.
 
 ---
 
-## How it works
+## How the engine works
 
-The engine is built from scratch in `engine.js` and uses three standard techniques found in competitive chess programs:
+Built from scratch in `engine.js`, using three standard techniques:
 
-**Minimax** — the engine explores all possible move sequences up to a configurable depth, assuming the opponent always plays the best available response.
+**Minimax** — explores all move sequences up to a configurable depth, assuming the opponent always responds optimally.
 
-**Alpha-beta pruning** — branches that cannot possibly improve on the current best line are cut early, allowing the engine to search deeper in the same amount of time.
+**Alpha-beta pruning** — cuts branches that cannot improve on the best line already found, allowing deeper search in the same time.
 
-**Piece-Square Tables (PST)** — each piece has a positional bonus table that encodes strategic preferences: pawns are rewarded for advancing, knights are penalised on the edge of the board, the king is encouraged to stay safe. This gives the engine a positional understanding beyond pure material count.
+**Piece-Square Tables (PST)** — positional bonus tables for each piece type. Pawns are rewarded for advancing, knights penalised on the rim, kings encouraged to stay sheltered. This gives the engine genuine positional awareness beyond material counting.
 
-Move ordering (captures and promotions first) improves pruning efficiency significantly.
+**Move ordering** — captures and promotions are searched first, which dramatically improves pruning efficiency.
+
+**Web Worker** — in Play vs Engine mode, the search runs in a background thread. The UI stays fully responsive at all difficulty levels.
+
+**Blunder rate** — at lower difficulty levels, the engine occasionally plays a random legal move instead of the best one. This produces realistic mistakes rather than just shallow search.
 
 ---
 
-## Rendering & UI
+## Difficulty levels
 
-- Board rendered via **CSS Grid (8×8)**
-- Game state handled by **chess.js**
-- Pieces rendered using **local SVG assets** (not Unicode)
+| Level    | Depth | Blunder rate | Approx. strength | Time per move   |
+|----------|-------|--------------|------------------|-----------------|
+| Beginner | 1     | 40%          | ~400 Elo         | ~0.2s           |
+| Casual   | 2     | 20%          | ~800 Elo         | ~0.5s           |
+| Club     | 3     | 5%           | ~1200 Elo        | ~1s             |
+| Advanced | 4     | 0%           | ~1800 Elo        | 2–5s            |
+| Master   | 5     | 0%           | ~2400 Elo        | up to 15s       |
 
-Why SVG:
-- consistent across iOS, Android, desktop
-- no font dependency
-- full visual control
+---
 
-Assets live in:
+## Rendering & pieces
 
-/pieces/
+- Board rendered via CSS Grid (8×8)
+- Game state managed by [chess.js](https://github.com/jhlywa/chess.js)
+- Pieces rendered as local SVG files — identical across iOS, Android, and desktop, with no dependency on system fonts
 
-Naming:
-
-wK.svg, wQ.svg, wR.svg, wB.svg, wN.svg, wP.svg
-bK.svg, bQ.svg, bR.svg, bB.svg, bN.svg, bP.svg
+```
+/pieces/wK.svg  wQ.svg  wR.svg  wB.svg  wN.svg  wP.svg
+        bK.svg  bQ.svg  bR.svg  bB.svg  bN.svg  bP.svg
+```
 
 ---
 
 ## Tech stack
 
-- [chess.js](https://github.com/jhlywa/chess.js) — move generation, validation, and game state
+- chess.js — move generation, validation, game state
 - Vanilla JavaScript — no framework, no build step
-- CSS custom properties — responsive UI and theming
-- Static assets (SVG) — consistent rendering
+- Web Workers API — non-blocking engine computation
+- CSS custom properties — theming and responsive layout
+- URL-encoded state — puzzle sharing without a backend
 
 ---
 
@@ -96,82 +92,62 @@ bK.svg, bQ.svg, bR.svg, bB.svg, bN.svg, bP.svg
 ```bash
 git clone https://github.com/your-username/chess-assistant
 cd chess-assistant
-# Open index.html in any browser — no server needed
-open index.html
-
-Or run a simple local server:
-
 npx serve
+# or just open index.html directly in any browser
+```
 
+---
 
-⸻
+## Deploy to Vercel
 
-Deploy to Vercel
-	1.	Fork or clone this repository
-	2.	Go to https://vercel.com and import the repo
-	3.	Click Deploy
+1. Fork or clone this repository
+2. Go to [vercel.com](https://vercel.com) and import the repo
+3. Click Deploy — no configuration required
 
-No configuration required.
+The `vercel.json` handles clean URLs automatically.
 
-⸻
+---
 
-Engine strength
+## Project structure
 
-Depth	Approximate strength	Response time
-2	Beginner	Instant
-3 (default)	Intermediate	< 1 second
-4	Advanced	2–5 seconds
-5	Strong	5–15 seconds
-
-Depth is adjustable via the UI slider.
-
-⸻
-
-Project structure
-
+```
 chess-assistant/
-├── index.html        # App entry point
-├── style.css         # UI and layout
-├── engine.js         # Minimax + alpha-beta + PST
-├── ui.js             # Main game logic and rendering
-├── puzzle-mode.js    # Puzzle + editor logic
-├── puzzles.js        # Puzzle dataset
-├── pieces.js         # SVG resolver
-├── /pieces           # SVG assets
-├── vercel.json       # Deployment config
+├── index.html          # Entry point, tab navigation, setup screens
+├── style.css           # UI, layout, theming
+├── engine.js           # Minimax + alpha-beta + PST + static eval
+├── engine.worker.js    # Web Worker wrapper for Play vs Engine
+├── ui.js               # Game logic for vs, lab, correspondence modes
+├── puzzle-mode.js      # Position editor, shared puzzle view
+├── puzzles.js          # Shared chess utilities (findMateInOne)
+├── pieces.js           # SVG path resolver
+├── pieces/             # SVG piece assets
+├── vercel.json         # Deployment config
 └── README.md
+```
 
+---
 
-⸻
+## Limitations
 
-Limitations
-	•	Engine is intentionally lightweight (not Stockfish-level)
-	•	Only mate-in-1 puzzles (for now)
-	•	No PGN export or game history persistence
-	•	No multiplayer
+- Engine is intentionally lightweight — not Stockfish-level
+- No game history persistence between sessions
+- No PGN export
+- No multiplayer
+- Puzzle solve mode coming soon
 
-⸻
+---
 
-Why not use AI (LLMs)?
+## Why not an LLM?
 
-LLMs (like ChatGPT or Claude) are poor chess players because they generate moves statistically rather than calculating variations.
+LLMs generate moves statistically rather than calculating variations. They have no concept of forced sequences, material count, or tactical depth. A deterministic search engine is the correct tool for a finite, rule-based system like chess.
 
-This project uses a deterministic search engine instead — the correct approach for a finite, rule-based system like chess.
+---
 
-At depth 3–4, the engine beats most casual players. At depth 5, it reaches solid club-level strength.
-
-⸻
-
-Future improvements
-	•	Stronger engine
-	•	More puzzle types (mate in 2/3, tactics)
-	•	Drag & drop pieces
-	•	Mobile UX improvements
-	•	Move animations
-
-⸻
-
-License
+## License
 
 MIT — free to use, modify, and deploy.
 
+---
+
+*Made with love by Leo — a terrible chess player who believes the best move is making things free.*
+```
