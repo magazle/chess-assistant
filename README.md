@@ -1,4 +1,3 @@
-```markdown
 # Chess Assistant
 
 A browser-based chess assistant powered by a real minimax engine. No backend, no AI, no subscription — pure JavaScript in the browser.
@@ -90,7 +89,7 @@ Built from scratch in `engine.js`, using three standard techniques:
 ## Getting started locally
 
 ```bash
-git clone https://github.com/your-username/chess-assistant
+git clone https://github.com/magazle/chess-assistant
 cd chess-assistant
 npx serve
 # or just open index.html directly in any browser
@@ -150,4 +149,3 @@ MIT — free to use, modify, and deploy.
 ---
 
 *Made with love by Leo — a terrible chess player who believes the best move is making things free.*
-```
