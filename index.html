@@ -60,8 +60,16 @@
 
       <!-- ── Opening Lab ── -->
       <div id="panel-lab" class="tab-panel" style="display:none">
-        <p>Explore positions freely. Go back anytime to try a different line.</p>
+        <p>Explore positions freely. The engine plays the opponent — go back anytime to try a different line.</p>
         <small>FEN · PGN import · Move navigation · Evaluation bar</small>
+
+        <div class="diff-grid">
+          <button class="diff-btn" data-level="beginner" onclick="setDifficulty('beginner')"><span class="diff-name">Beginner</span><span class="diff-time">~0.2s / move</span></button>
+          <button class="diff-btn" data-level="casual" onclick="setDifficulty('casual')"><span class="diff-name">Casual</span><span class="diff-time">~0.5s / move</span></button>
+          <button class="diff-btn active" data-level="club" onclick="setDifficulty('club')"><span class="diff-name">Club</span><span class="diff-time">~1s / move</span></button>
+          <button class="diff-btn" data-level="advanced" onclick="setDifficulty('advanced')"><span class="diff-name">Advanced</span><span class="diff-time">2–5s / move</span></button>
+          <button class="diff-btn" data-level="master" onclick="setDifficulty('master')"><span class="diff-name">Master</span><span class="diff-time">up to 15s</span></button>
+        </div>
 
         <div class="import-block">
           <div class="import-row">
@@ -90,6 +98,14 @@
       <div id="panel-correspondence" class="tab-panel" style="display:none">
         <p>The engine plays your pieces. You move the opponent's.</p>
         <small>Load a game via PGN to set up the position, or start fresh.</small>
+
+        <div class="diff-grid">
+          <button class="diff-btn" data-level="beginner" onclick="setDifficulty('beginner')"><span class="diff-name">Beginner</span><span class="diff-time">~0.2s / move</span></button>
+          <button class="diff-btn" data-level="casual" onclick="setDifficulty('casual')"><span class="diff-name">Casual</span><span class="diff-time">~0.5s / move</span></button>
+          <button class="diff-btn active" data-level="club" onclick="setDifficulty('club')"><span class="diff-name">Club</span><span class="diff-time">~1s / move</span></button>
+          <button class="diff-btn" data-level="advanced" onclick="setDifficulty('advanced')"><span class="diff-name">Advanced</span><span class="diff-time">2–5s / move</span></button>
+          <button class="diff-btn" data-level="master" onclick="setDifficulty('master')"><span class="diff-name">Master</span><span class="diff-time">up to 15s</span></button>
+        </div>
 
         <div class="import-block">
           <div class="import-row">
