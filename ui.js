@@ -254,6 +254,10 @@ let labIndex   = 0;
 let pendingPromoFrom = null;
 let pendingPromoTo   = null;
 
+// Analysis hint state
+let hintFrom = null;
+let hintTo   = null;
+
 // ── Game start ────────────────────────────────────────────────────────────────
 
 function startGame(color, mode, fen) {
@@ -267,7 +271,8 @@ function startGame(color, mode, fen) {
   engineThinking = false;
   gameOver       = false;
 
-  if (mode === 'lab') { labHistory = [chess.fen()]; labIndex = 0; }
+  if (mode === 'lab' || mode === 'analysis') { labHistory = [chess.fen()]; labIndex = 0; }
+  hintFrom = null; hintTo = null;
 
   document.getElementById('setup').style.display = 'none';
   const gameEl = document.getElementById('game');
@@ -277,7 +282,7 @@ function startGame(color, mode, fen) {
   buildGameUI();
   renderBoard();
   updateEvalBar();
-  if (mode === 'lab') updateOpeningName();
+  if (mode === 'lab' || mode === 'analysis') updateOpeningName();
 
   if (chess.turn() === getEngineColor()) triggerEngine();
   return true;
@@ -295,7 +300,7 @@ function loadPGNAndStart(color, mode) {
     const fens = [g.fen()];
     for (const m of moves) { g.move(m); fens.push(g.fen()); }
     if (!startGame(color, mode, fens[fens.length - 1])) return;
-    if (mode === 'lab') { labHistory = fens; labIndex = fens.length - 1; updateNavButtons(); updateOpeningName(); }
+    if (mode === 'lab' || mode === 'analysis') { labHistory = fens; labIndex = fens.length - 1; updateNavButtons(); updateOpeningName(); }
     return;
   }
 
@@ -321,15 +326,17 @@ function resetGame() {
 
 function getEngineColor() {
   if (gameMode === 'vs')             return playerColor === 'w' ? 'b' : 'w';
-  if (gameMode === 'lab')            return playerColor === 'w' ? 'b' : 'w'; // engine plays OPPONENT
-  if (gameMode === 'correspondence') return playerColor;                      // engine plays YOUR pieces
+  if (gameMode === 'lab')            return playerColor === 'w' ? 'b' : 'w';
+  if (gameMode === 'correspondence') return playerColor;
+  if (gameMode === 'analysis')       return null; // no automatic engine moves
   return null;
 }
 
 function getHumanColor() {
   if (gameMode === 'vs')             return playerColor;
-  if (gameMode === 'lab')            return playerColor;                      // human moves OWN pieces
+  if (gameMode === 'lab')            return playerColor;
   if (gameMode === 'correspondence') return playerColor === 'w' ? 'b' : 'w';
+  if (gameMode === 'analysis')       return chess.turn(); // always current turn
   return playerColor;
 }
 
@@ -339,7 +346,8 @@ function buildGameUI() {
   const gameEl = document.getElementById('game');
   const ranks = playerColor === 'w' ? ['8','7','6','5','4','3','2','1'] : ['1','2','3','4','5','6','7','8'];
   const files = playerColor === 'w' ? ['a','b','c','d','e','f','g','h'] : ['h','g','f','e','d','c','b','a'];
-  const badges = { vs: 'vs Engine', lab: 'Opening Lab', correspondence: 'Correspondence' };
+  const badges = { vs: 'vs Engine', lab: 'Opening Lab', correspondence: 'Correspondence', analysis: 'Analysis Board' };
+  const isNav  = gameMode === 'lab' || gameMode === 'analysis';
 
   gameEl.innerHTML = `
     <div class="board-area">
@@ -356,7 +364,7 @@ function buildGameUI() {
           <div class="file-row">${files.map(f => `<div class="file-lbl">${f}</div>`).join('')}</div>
         </div>
       </div>
-      ${gameMode === 'lab' ? `
+      ${isNav ? `
       <div class="nav-row">
         <button class="nav-btn" id="btn-back" onclick="labGoBack()">← Back</button>
         <button class="nav-btn" id="btn-fwd"  onclick="labGoForward()">Forward →</button>
@@ -364,11 +372,19 @@ function buildGameUI() {
     </div>
     <div class="side-panel">
       <div class="pcard">
-        <div class="clbl">Playing as</div>
-        <div class="pname">${playerColor === 'w' ? 'White' : 'Black'}</div>
+        <div class="clbl">${gameMode === 'analysis' ? 'Mode' : 'Playing as'}</div>
+        <div class="pname">${gameMode === 'analysis' ? 'Analysis Board' : (playerColor === 'w' ? 'White' : 'Black')}</div>
         <div class="mode-badge">${badges[gameMode] || ''}</div>
       </div>
-      ${gameMode === 'lab' ? `
+      ${gameMode === 'analysis' ? `
+      <div class="pcard">
+        <div class="clbl">Engine hint</div>
+        <button class="ask-engine-btn" id="ask-engine-btn" onclick="askEngine()">
+          Ask engine for best move
+        </button>
+        <div id="hint-text" style="font-size:12px;color:var(--text2);margin-top:8px;min-height:16px"></div>
+      </div>` : ''}
+      ${gameMode === 'lab' || gameMode === 'analysis' ? `
       <div class="pcard">
         <div class="clbl">Opening</div>
         <div id="opening-name" style="font-size:13px;font-weight:600;color:var(--text3)">Starting position</div>
@@ -430,6 +446,8 @@ function renderBoard() {
       if (sq === selectedSq)                    cls += ' sel';
       else if (lastMove && sq === lastMove.from) cls += ' lf';
       else if (lastMove && sq === lastMove.to)   cls += ' lt2';
+      if (sq === hintFrom)                       cls += ' hint-from';
+      if (sq === hintTo)                         cls += ' hint-to';
       if (sq === chk)                            cls += ' chk';
       if (legalTargets.includes(sq))             cls += piece ? ' hr' : ' hd';
       const ph = piece ? `<img class="piece" src="${getPieceSVG(piece.color, piece.type)}" alt="" draggable="false">` : '';
@@ -479,10 +497,11 @@ function onSquareClick(sq) {
     const move = chess.move({ from: selectedSq, to: sq, promotion: 'q' });
     if (move) {
       lastMove = { from: move.from, to: move.to };
+      hintFrom = null; hintTo = null;
       selectedSq = null; legalTargets = [];
-      if (gameMode === 'lab') { labHistory = labHistory.slice(0, labIndex + 1); labHistory.push(chess.fen()); labIndex++; }
+      if (gameMode === 'lab' || gameMode === 'analysis') { labHistory = labHistory.slice(0, labIndex + 1); labHistory.push(chess.fen()); labIndex++; }
       renderBoard(); updateEvalBar();
-      if (gameMode === 'lab') updateOpeningName();
+      if (gameMode === 'lab' || gameMode === 'analysis') updateOpeningName();
       if (chess.game_over()) { gameOver = true; setTimeout(showGameOverBanner, 400); }
       else triggerEngine();
       return;
@@ -535,20 +554,21 @@ function runEngineSync() {
     if (best) chess.move(best);
   }
   if (best) lastMove = { from: best.from, to: best.to };
-  if (gameMode === 'lab') { labHistory = labHistory.slice(0, labIndex + 1); labHistory.push(chess.fen()); labIndex++; }
+  if (gameMode === 'lab' || gameMode === 'analysis') { labHistory = labHistory.slice(0, labIndex + 1); labHistory.push(chess.fen()); labIndex++; }
   engineThinking = false;
   renderBoard(); updateEvalBar();
-  if (gameMode === 'lab') updateOpeningName();
+  if (gameMode === 'lab' || gameMode === 'analysis') updateOpeningName();
   if (chess.game_over()) { gameOver = true; setTimeout(showGameOverBanner, 400); }
 }
 
-// ── Opening Lab navigation ────────────────────────────────────────────────────
+// ── Opening Lab / Analysis navigation ────────────────────────────────────────
 
 function labGoBack() {
   if (labIndex <= 0) return;
   labIndex--;
   chess.load(labHistory[labIndex]);
   lastMove = null; selectedSq = null; legalTargets = []; gameOver = false;
+  hintFrom = null; hintTo = null;
   renderBoard(); updateEvalBar(); updateOpeningName();
 }
 
@@ -557,11 +577,12 @@ function labGoForward() {
   labIndex++;
   chess.load(labHistory[labIndex]);
   lastMove = null; selectedSq = null; legalTargets = [];
+  hintFrom = null; hintTo = null;
   renderBoard(); updateEvalBar(); updateOpeningName();
 }
 
 function updateNavButtons() {
-  if (gameMode !== 'lab') return;
+  if (gameMode !== 'lab' && gameMode !== 'analysis') return;
   const back = document.getElementById('btn-back');
   const fwd  = document.getElementById('btn-fwd');
   if (back) back.disabled = labIndex <= 0;
@@ -580,7 +601,8 @@ function updateStatus() {
   const humanColor = getHumanColor();
   if (chess.turn() === humanColor) {
     if (gameMode === 'correspondence') el.textContent = "Move the opponent's pieces";
-    else if (gameMode === 'lab') el.textContent = `${chess.turn() === 'w' ? 'White' : 'Black'} to move`;
+    else if (gameMode === 'lab')       el.textContent = `${chess.turn() === 'w' ? 'White' : 'Black'} to move`;
+    else if (gameMode === 'analysis')  el.textContent = `${chess.turn() === 'w' ? 'White' : 'Black'} to move — ask engine for hint`;
     else el.textContent = 'Your turn';
   } else {
     el.textContent = 'Engine is thinking…';
@@ -623,6 +645,29 @@ function showGameOverBanner() {
   slot.innerHTML = `<div class="game-over ${cls}"><h3>${title}</h3><p>${sub}</p></div>`;
 }
 
+// ── Analysis — Ask engine ─────────────────────────────────────────────────────
+
+function askEngine() {
+  if (chess.game_over()) return;
+  const btn  = document.getElementById('ask-engine-btn');
+  const txt  = document.getElementById('hint-text');
+  if (btn) { btn.disabled = true; btn.classList.add('thinking'); btn.textContent = 'Calculating…'; }
+
+  setTimeout(() => {
+    const turnColor = chess.turn();
+    const best = getBestMove(chess, DIFFICULTY[currentDifficulty].depth, turnColor);
+    if (best) {
+      hintFrom = best.from;
+      hintTo   = best.to;
+      renderBoard();
+      if (txt) txt.textContent = `Best move for ${turnColor === 'w' ? 'White' : 'Black'}: ${best.san}`;
+    } else {
+      if (txt) txt.textContent = 'No move found.';
+    }
+    if (btn) { btn.disabled = false; btn.classList.remove('thinking'); btn.textContent = 'Ask engine for best move'; }
+  }, 20);
+}
+
 // ── Promotion picker ──────────────────────────────────────────────────────────
 
 function showPromotionPicker(color) {
@@ -654,9 +699,10 @@ function completePromotion(piece) {
 
   if (move) {
     lastMove = { from: move.from, to: move.to };
-    if (gameMode === 'lab') { labHistory = labHistory.slice(0, labIndex + 1); labHistory.push(chess.fen()); labIndex++; }
+    hintFrom = null; hintTo = null;
+    if (gameMode === 'lab' || gameMode === 'analysis') { labHistory = labHistory.slice(0, labIndex + 1); labHistory.push(chess.fen()); labIndex++; }
     renderBoard(); updateEvalBar();
-    if (gameMode === 'lab') updateOpeningName();
+    if (gameMode === 'lab' || gameMode === 'analysis') updateOpeningName();
     if (chess.game_over()) { gameOver = true; setTimeout(showGameOverBanner, 400); }
     else triggerEngine();
   }
