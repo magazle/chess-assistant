@@ -250,6 +250,10 @@ let engineWorker      = null;
 let labHistory = [];
 let labIndex   = 0;
 
+// Promotion state
+let pendingPromoFrom = null;
+let pendingPromoTo   = null;
+
 // ── Game start ────────────────────────────────────────────────────────────────
 
 function startGame(color, mode, fen) {
@@ -456,6 +460,22 @@ function onSquareClick(sq) {
   }
 
   if (legalTargets.includes(sq)) {
+    // Check if this is a pawn promotion
+    const movingPiece = chess.get(selectedSq);
+    const isPromotion = movingPiece && movingPiece.type === 'p' &&
+      ((movingPiece.color === 'w' && sq[1] === '8') ||
+       (movingPiece.color === 'b' && sq[1] === '1'));
+
+    if (isPromotion) {
+      pendingPromoFrom = selectedSq;
+      pendingPromoTo   = sq;
+      selectedSq   = null;
+      legalTargets = [];
+      renderBoard();
+      showPromotionPicker(movingPiece.color);
+      return;
+    }
+
     const move = chess.move({ from: selectedSq, to: sq, promotion: 'q' });
     if (move) {
       lastMove = { from: move.from, to: move.to };
@@ -601,6 +621,45 @@ function showGameOverBanner() {
   else if (chess.in_threefold_repetition()) { sub = 'Threefold repetition'; }
   else if (chess.insufficient_material())   { sub = 'Insufficient material'; }
   slot.innerHTML = `<div class="game-over ${cls}"><h3>${title}</h3><p>${sub}</p></div>`;
+}
+
+// ── Promotion picker ──────────────────────────────────────────────────────────
+
+function showPromotionPicker(color) {
+  const pieces = ['q','r','b','n'];
+  const overlay = document.createElement('div');
+  overlay.className = 'promo-overlay';
+  overlay.id = 'promo-overlay';
+  overlay.innerHTML = `
+    <div class="promo-box">
+      <span class="clbl">Promote pawn to</span>
+      <div class="promo-pieces">
+        ${pieces.map(p => `
+          <div class="promo-piece" onclick="completePromotion('${p}')">
+            <img src="${getPieceSVG(color, p)}" alt="${p}">
+          </div>`).join('')}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function completePromotion(piece) {
+  const overlay = document.getElementById('promo-overlay');
+  if (overlay) overlay.remove();
+  if (!pendingPromoFrom || !pendingPromoTo) return;
+
+  const move = chess.move({ from: pendingPromoFrom, to: pendingPromoTo, promotion: piece });
+  pendingPromoFrom = null;
+  pendingPromoTo   = null;
+
+  if (move) {
+    lastMove = { from: move.from, to: move.to };
+    if (gameMode === 'lab') { labHistory = labHistory.slice(0, labIndex + 1); labHistory.push(chess.fen()); labIndex++; }
+    renderBoard(); updateEvalBar();
+    if (gameMode === 'lab') updateOpeningName();
+    if (chess.game_over()) { gameOver = true; setTimeout(showGameOverBanner, 400); }
+    else triggerEngine();
+  }
 }
 
 // ── Difficulty ────────────────────────────────────────────────────────────────
