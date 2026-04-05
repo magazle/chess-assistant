@@ -503,8 +503,8 @@ function runEngineWorker() {
 
 function runEngineSync() {
   const ec    = getEngineColor();
-  const depth = gameMode === 'vs' ? DIFFICULTY[currentDifficulty].depth : 3;
-  const blund = gameMode === 'vs' ? DIFFICULTY[currentDifficulty].blunder : 0;
+  const depth = DIFFICULTY[currentDifficulty].depth;
+  const blund = DIFFICULTY[currentDifficulty].blunder;
   let best;
   if (blund > 0 && Math.random() < blund) {
     const moves = chess.moves({ verbose: true });
