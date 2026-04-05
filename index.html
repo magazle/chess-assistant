@@ -12,18 +12,17 @@
       <h1>Chess Assistant</h1>
 
       <div class="mode-tabs">
-        <button class="tab active" onclick="selectTab('vs')"             id="tab-vs">vs Engine</button>
-        <button class="tab"        onclick="selectTab('lab')"            id="tab-lab">Opening Lab</button>
-        <button class="tab"        onclick="selectTab('analysis')"       id="tab-analysis">Analysis</button>
-        <button class="tab"        onclick="selectTab('correspondence')" id="tab-correspondence">Correspondence</button>
-        <button class="tab"        onclick="selectTab('puzzle')"         id="tab-puzzle">Puzzles</button>
+        <button class="tab active" id="tab-vs"             onclick="selectTab('vs')">vs Engine</button>
+        <button class="tab"        id="tab-lab"            onclick="selectTab('lab')">Opening Lab</button>
+        <button class="tab"        id="tab-analysis"       onclick="selectTab('analysis')">Analysis</button>
+        <button class="tab"        id="tab-correspondence" onclick="selectTab('correspondence')">Engine Pilot</button>
+        <button class="tab"        id="tab-puzzle"         onclick="selectTab('puzzle')">Puzzles</button>
       </div>
 
-      <!-- ── Play vs Engine ── -->
+      <!-- vs Engine -->
       <div id="panel-vs" class="tab-panel">
         <p>You move your pieces. The engine plays the opponent.</p>
         <small>Choose your difficulty, then pick a side.</small>
-
         <div class="diff-slider-wrap">
           <input type="range" class="diff-slider" id="slider-vs" min="0" max="4" step="1" value="2"
             oninput="setDifficultyByIndex(+this.value)">
@@ -35,7 +34,6 @@
             <span class="diff-tick-lbl"><span class="diff-tick-name">Master</span><span class="diff-tick-time">≤15s</span></span>
           </div>
         </div>
-
         <div class="color-choice">
           <div class="cbtn" onclick="startGame('w','vs')">
             <span class="cbtn-piece" id="icon-vs-w"></span>
@@ -48,11 +46,10 @@
         </div>
       </div>
 
-      <!-- ── Opening Lab ── -->
+      <!-- Opening Lab -->
       <div id="panel-lab" class="tab-panel" style="display:none">
-        <p>Explore positions freely. The engine plays the opponent — go back anytime to try a different line.</p>
-        <small>FEN · PGN import · Move navigation · Evaluation bar</small>
-
+        <p>Explore positions freely. The engine plays the opponent — navigate back to try different lines.</p>
+        <small>Move navigation · Opening detection · Eval bar</small>
         <div class="diff-slider-wrap">
           <input type="range" class="diff-slider" id="slider-lab" min="0" max="4" step="1" value="2"
             oninput="setDifficultyByIndex(+this.value)">
@@ -64,18 +61,19 @@
             <span class="diff-tick-lbl"><span class="diff-tick-name">Master</span><span class="diff-tick-time">≤15s</span></span>
           </div>
         </div>
-
-        <div class="import-block">
-          <div class="import-row">
-            <label class="import-lbl">FEN</label>
-            <input type="text" id="fen-lab" class="import-input" placeholder="Paste a FEN string (optional)">
+        <details class="adv-options">
+          <summary>Advanced options — load FEN / PGN</summary>
+          <div class="import-block">
+            <div class="import-row">
+              <label class="import-lbl">FEN</label>
+              <input type="text" id="fen-lab" class="import-input" placeholder="Paste a FEN string">
+            </div>
+            <div class="import-row">
+              <label class="import-lbl">PGN</label>
+              <textarea id="pgn-lab" class="import-textarea" rows="3" placeholder="Paste PGN notation"></textarea>
+            </div>
           </div>
-          <div class="import-row">
-            <label class="import-lbl">PGN</label>
-            <textarea id="pgn-lab" class="import-textarea" rows="3" placeholder="Paste PGN notation (optional)"></textarea>
-          </div>
-        </div>
-
+        </details>
         <div class="color-choice">
           <div class="cbtn" onclick="loadPGNAndStart('w','lab')">
             <span class="cbtn-piece" id="icon-lab-w"></span>
@@ -88,11 +86,10 @@
         </div>
       </div>
 
-      <!-- ── Analysis Board ── -->
+      <!-- Analysis Board -->
       <div id="panel-analysis" class="tab-panel" style="display:none">
-        <p>Move both sides freely. Ask the engine for the best move at any moment — it highlights the suggestion without playing it.</p>
-        <small>Navigate back and forward · Opening detection · Eval bar · FEN / PGN import</small>
-
+        <p>Move both sides freely. Ask the engine for its best move at any moment — it highlights the suggestion without playing it.</p>
+        <small>Move navigation · Opening detection · Eval bar</small>
         <div class="diff-slider-wrap">
           <input type="range" class="diff-slider" id="slider-analysis" min="0" max="4" step="1" value="2"
             oninput="setDifficultyByIndex(+this.value)">
@@ -104,33 +101,35 @@
             <span class="diff-tick-lbl"><span class="diff-tick-name">Master</span><span class="diff-tick-time">≤15s</span></span>
           </div>
         </div>
-
-        <div class="import-block">
-          <div class="import-row">
-            <label class="import-lbl">FEN</label>
-            <input type="text" id="fen-analysis" class="import-input" placeholder="Paste a FEN string (optional)">
+        <details class="adv-options">
+          <summary>Advanced options — load FEN / PGN</summary>
+          <div class="import-block">
+            <div class="import-row">
+              <label class="import-lbl">FEN</label>
+              <input type="text" id="fen-analysis" class="import-input" placeholder="Paste a FEN string">
+            </div>
+            <div class="import-row">
+              <label class="import-lbl">PGN</label>
+              <textarea id="pgn-analysis" class="import-textarea" rows="3" placeholder="Paste PGN notation"></textarea>
+            </div>
           </div>
-          <div class="import-row">
-            <label class="import-lbl">PGN</label>
-            <textarea id="pgn-analysis" class="import-textarea" rows="3" placeholder="Paste PGN notation (optional)"></textarea>
-          </div>
-        </div>
-
+        </details>
         <div class="color-choice">
           <div class="cbtn" onclick="loadPGNAndStart('w','analysis')">
             <span class="cbtn-piece" id="icon-an-w"></span>
-            <span class="btnlbl">White's perspective</span>
+            <span class="btnlbl">White's view</span>
           </div>
           <div class="cbtn" onclick="loadPGNAndStart('b','analysis')">
             <span class="cbtn-piece" id="icon-an-b"></span>
-            <span class="btnlbl">Black's perspective</span>
+            <span class="btnlbl">Black's view</span>
           </div>
         </div>
       </div>
-      <div id="panel-correspondence" class="tab-panel" style="display:none">
-        <p>The engine plays your pieces. You move the opponent's.</p>
-        <small>Load a game via PGN to set up the position, or start fresh.</small>
 
+      <!-- Engine Pilot -->
+      <div id="panel-correspondence" class="tab-panel" style="display:none">
+        <p>The engine plays your pieces automatically. You move the opponent's.</p>
+        <small>Built for correspondence chess and post-game analysis. I'm aware this tool can be used in other ways — I don't endorse unfair play.</small>
         <div class="diff-slider-wrap">
           <input type="range" class="diff-slider" id="slider-cor" min="0" max="4" step="1" value="2"
             oninput="setDifficultyByIndex(+this.value)">
@@ -142,14 +141,15 @@
             <span class="diff-tick-lbl"><span class="diff-tick-name">Master</span><span class="diff-tick-time">≤15s</span></span>
           </div>
         </div>
-
-        <div class="import-block">
-          <div class="import-row">
-            <label class="import-lbl">PGN</label>
-            <textarea id="pgn-correspondence" class="import-textarea" rows="3" placeholder="Paste PGN to load a game position (optional)"></textarea>
+        <details class="adv-options">
+          <summary>Advanced options — load PGN</summary>
+          <div class="import-block">
+            <div class="import-row">
+              <label class="import-lbl">PGN</label>
+              <textarea id="pgn-correspondence" class="import-textarea" rows="3" placeholder="Paste PGN to start from a specific position"></textarea>
+            </div>
           </div>
-        </div>
-
+        </details>
         <div class="color-choice">
           <div class="cbtn" onclick="loadPGNAndStart('w','correspondence')">
             <span class="cbtn-piece" id="icon-cor-w"></span>
@@ -162,9 +162,9 @@
         </div>
       </div>
 
-      <!-- ── Puzzles ── -->
+      <!-- Puzzles -->
       <div id="panel-puzzle" class="tab-panel" style="display:none">
-        <p>Build any position, add a hint and a solution, then share it via link.</p>
+        <p>Build any position, add a hint and solution, then share via link.</p>
         <small>Recipients can reveal hint and solution on demand.</small>
         <div class="color-choice">
           <div class="cbtn" onclick="startEditorMode()">
@@ -200,7 +200,7 @@
 
     function setupIcon(id, color, type) {
       const el = document.getElementById(id);
-      if (el) el.innerHTML = `<img src="${getPieceSVG(color,type)}" width="52" height="52" alt="" draggable="false">`;
+      if (el) el.innerHTML = `<img src="${getPieceSVG(color, type)}" width="52" height="52" alt="" draggable="false">`;
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -213,8 +213,7 @@
       setupIcon('icon-cor-w',    'w', 'r');
       setupIcon('icon-cor-b',    'b', 'r');
       setupIcon('icon-pz-create','w', 'n');
-      // Initialise slider state (Club = index 2)
-      setDifficultyByIndex(2);
+      setDifficultyByIndex(2); // default: Club
     });
 
     window.addEventListener('load', () => {

@@ -717,3 +717,44 @@ body {
 .ask-engine-btn:hover { background: var(--accent); color: #fff; }
 .ask-engine-btn:disabled { opacity: .4; cursor: not-allowed; }
 .ask-engine-btn.thinking { opacity: .6; }
+
+/* ── Advanced options spoiler ── */
+.adv-options {
+  max-width: 480px;
+  margin: 0 auto 1rem;
+  text-align: left;
+}
+.adv-options summary {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  user-select: none;
+}
+.adv-options summary::before {
+  content: '›';
+  font-size: 16px;
+  transition: transform .2s;
+  display: inline-block;
+}
+.adv-options[open] summary::before { transform: rotate(90deg); }
+.adv-options summary::-webkit-details-marker { display: none; }
+.adv-options .import-block { padding-top: 6px; }
+
+/* ── In-game text helpers ── */
+.opening-name-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text3);
+}
+.hint-result {
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 8px;
+  min-height: 16px;
+}
