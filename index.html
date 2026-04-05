@@ -12,10 +12,10 @@
       <h1>Chess Assistant</h1>
 
       <div class="mode-tabs">
-        <button class="tab active" onclick="selectTab('vs')"            id="tab-vs">Play vs Engine</button>
-        <button class="tab"        onclick="selectTab('lab')"           id="tab-lab">Opening Lab</button>
+        <button class="tab active" onclick="selectTab('vs')"             id="tab-vs">Play vs Engine</button>
+        <button class="tab"        onclick="selectTab('lab')"            id="tab-lab">Opening Lab</button>
         <button class="tab"        onclick="selectTab('correspondence')" id="tab-correspondence">Correspondence</button>
-        <button class="tab"        onclick="selectTab('puzzle')"        id="tab-puzzle">Puzzles</button>
+        <button class="tab"        onclick="selectTab('puzzle')"         id="tab-puzzle">Puzzles</button>
       </div>
 
       <!-- ── Play vs Engine ── -->
@@ -23,27 +23,16 @@
         <p>You move your pieces. The engine plays the opponent.</p>
         <small>Choose your difficulty, then pick a side.</small>
 
-        <div class="diff-grid">
-          <button class="diff-btn" data-level="beginner"  onclick="setDifficulty('beginner')">
-            <span class="diff-name">Beginner</span>
-            <span class="diff-time">~0.2s / move</span>
-          </button>
-          <button class="diff-btn" data-level="casual"    onclick="setDifficulty('casual')">
-            <span class="diff-name">Casual</span>
-            <span class="diff-time">~0.5s / move</span>
-          </button>
-          <button class="diff-btn active" data-level="club" onclick="setDifficulty('club')">
-            <span class="diff-name">Club</span>
-            <span class="diff-time">~1s / move</span>
-          </button>
-          <button class="diff-btn" data-level="advanced"  onclick="setDifficulty('advanced')">
-            <span class="diff-name">Advanced</span>
-            <span class="diff-time">2–5s / move</span>
-          </button>
-          <button class="diff-btn" data-level="master"    onclick="setDifficulty('master')">
-            <span class="diff-name">Master</span>
-            <span class="diff-time">up to 15s</span>
-          </button>
+        <div class="diff-slider-wrap">
+          <input type="range" class="diff-slider" id="slider-vs" min="0" max="4" step="1" value="2"
+            oninput="setDifficultyByIndex(+this.value)">
+          <div class="diff-tick-row">
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Beginner</span><span class="diff-tick-time">~0.2s</span></span>
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Casual</span><span class="diff-tick-time">~0.5s</span></span>
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Club</span><span class="diff-tick-time">~1s</span></span>
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Advanced</span><span class="diff-tick-time">2–5s</span></span>
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Master</span><span class="diff-tick-time">≤15s</span></span>
+          </div>
         </div>
 
         <div class="color-choice">
@@ -63,12 +52,16 @@
         <p>Explore positions freely. The engine plays the opponent — go back anytime to try a different line.</p>
         <small>FEN · PGN import · Move navigation · Evaluation bar</small>
 
-        <div class="diff-grid">
-          <button class="diff-btn" data-level="beginner" onclick="setDifficulty('beginner')"><span class="diff-name">Beginner</span><span class="diff-time">~0.2s / move</span></button>
-          <button class="diff-btn" data-level="casual" onclick="setDifficulty('casual')"><span class="diff-name">Casual</span><span class="diff-time">~0.5s / move</span></button>
-          <button class="diff-btn active" data-level="club" onclick="setDifficulty('club')"><span class="diff-name">Club</span><span class="diff-time">~1s / move</span></button>
-          <button class="diff-btn" data-level="advanced" onclick="setDifficulty('advanced')"><span class="diff-name">Advanced</span><span class="diff-time">2–5s / move</span></button>
-          <button class="diff-btn" data-level="master" onclick="setDifficulty('master')"><span class="diff-name">Master</span><span class="diff-time">up to 15s</span></button>
+        <div class="diff-slider-wrap">
+          <input type="range" class="diff-slider" id="slider-lab" min="0" max="4" step="1" value="2"
+            oninput="setDifficultyByIndex(+this.value)">
+          <div class="diff-tick-row">
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Beginner</span><span class="diff-tick-time">~0.2s</span></span>
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Casual</span><span class="diff-tick-time">~0.5s</span></span>
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Club</span><span class="diff-tick-time">~1s</span></span>
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Advanced</span><span class="diff-tick-time">2–5s</span></span>
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Master</span><span class="diff-tick-time">≤15s</span></span>
+          </div>
         </div>
 
         <div class="import-block">
@@ -99,12 +92,16 @@
         <p>The engine plays your pieces. You move the opponent's.</p>
         <small>Load a game via PGN to set up the position, or start fresh.</small>
 
-        <div class="diff-grid">
-          <button class="diff-btn" data-level="beginner" onclick="setDifficulty('beginner')"><span class="diff-name">Beginner</span><span class="diff-time">~0.2s / move</span></button>
-          <button class="diff-btn" data-level="casual" onclick="setDifficulty('casual')"><span class="diff-name">Casual</span><span class="diff-time">~0.5s / move</span></button>
-          <button class="diff-btn active" data-level="club" onclick="setDifficulty('club')"><span class="diff-name">Club</span><span class="diff-time">~1s / move</span></button>
-          <button class="diff-btn" data-level="advanced" onclick="setDifficulty('advanced')"><span class="diff-name">Advanced</span><span class="diff-time">2–5s / move</span></button>
-          <button class="diff-btn" data-level="master" onclick="setDifficulty('master')"><span class="diff-name">Master</span><span class="diff-time">up to 15s</span></button>
+        <div class="diff-slider-wrap">
+          <input type="range" class="diff-slider" id="slider-cor" min="0" max="4" step="1" value="2"
+            oninput="setDifficultyByIndex(+this.value)">
+          <div class="diff-tick-row">
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Beginner</span><span class="diff-tick-time">~0.2s</span></span>
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Casual</span><span class="diff-tick-time">~0.5s</span></span>
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Club</span><span class="diff-tick-time">~1s</span></span>
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Advanced</span><span class="diff-tick-time">2–5s</span></span>
+            <span class="diff-tick-lbl"><span class="diff-tick-name">Master</span><span class="diff-tick-time">≤15s</span></span>
+          </div>
         </div>
 
         <div class="import-block">
@@ -175,6 +172,8 @@
       setupIcon('icon-cor-w',    'w', 'r');
       setupIcon('icon-cor-b',    'b', 'r');
       setupIcon('icon-pz-create','w', 'b');
+      // Initialise slider state (Club = index 2)
+      setDifficultyByIndex(2);
     });
 
     window.addEventListener('load', () => {
