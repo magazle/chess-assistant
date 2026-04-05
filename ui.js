@@ -605,7 +605,24 @@ function showGameOverBanner() {
 
 // ── Difficulty ────────────────────────────────────────────────────────────────
 
+const DIFF_LEVELS = ['beginner','casual','club','advanced','master'];
+
+function setDifficultyByIndex(idx) {
+  currentDifficulty = DIFF_LEVELS[idx] || 'club';
+
+  // Sync all sliders to same position
+  document.querySelectorAll('.diff-slider').forEach(s => { s.value = idx; });
+
+  // Update tick label highlights for every slider wrap
+  document.querySelectorAll('.diff-tick-row').forEach(row => {
+    row.querySelectorAll('.diff-tick-lbl').forEach((lbl, i) => {
+      lbl.classList.toggle('active', i === idx);
+    });
+  });
+}
+
+// Keep old name for any legacy calls
 function setDifficulty(level) {
-  currentDifficulty = level;
-  document.querySelectorAll('.diff-btn').forEach(b => b.classList.toggle('active', b.dataset.level === level));
+  const idx = DIFF_LEVELS.indexOf(level);
+  if (idx >= 0) setDifficultyByIndex(idx);
 }
