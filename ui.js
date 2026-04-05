@@ -15,201 +15,29 @@ const DIFFICULTY = {
 
 const DIFF_LEVELS = ['beginner','casual','club','advanced','master'];
 
-// ── ECO opening table ─────────────────────────────────────────────────────────
-// Sorted longest-first so the most specific match wins.
-
-const ECO = [
-  { m: 'e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 d6 c3 O-O', n: 'Ruy Lopez, Closed' },
-  { m: 'e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O', n: 'Ruy Lopez, Open Defence' },
-  { m: 'e4 e5 Nf3 Nc6 Bb5 a6 Ba4', n: 'Ruy Lopez, Morphy Defence' },
-  { m: 'e4 e5 Nf3 Nc6 Bb5 Nf6',   n: 'Ruy Lopez, Berlin Defence' },
-  { m: 'e4 e5 Nf3 Nc6 Bb5 f5',    n: 'Ruy Lopez, Schliemann Defence' },
-  { m: 'e4 e5 Nf3 Nc6 Bb5',       n: 'Ruy Lopez' },
-  { m: 'e4 e5 Nf3 Nc6 Bc4 Bc5 c3 Nf6 d4', n: 'Giuoco Piano, Centre Attack' },
-  { m: 'e4 e5 Nf3 Nc6 Bc4 Bc5 c3', n: 'Giuoco Piano' },
-  { m: 'e4 e5 Nf3 Nc6 Bc4 Bc5',   n: 'Italian Game, Giuoco Piano' },
-  { m: 'e4 e5 Nf3 Nc6 Bc4 Nf6 Ng5', n: 'Italian, Fried Liver Attack' },
-  { m: 'e4 e5 Nf3 Nc6 Bc4 Nf6',   n: 'Italian, Two Knights Defence' },
-  { m: 'e4 e5 Nf3 Nc6 Bc4',       n: 'Italian Game' },
-  { m: 'e4 e5 Nf3 Nc6 d4 exd4 Nxd4 Bc5', n: 'Scotch Game, Classical' },
-  { m: 'e4 e5 Nf3 Nc6 d4 exd4 Nxd4 Nf6', n: 'Scotch Game, Schmidt Variation' },
-  { m: 'e4 e5 Nf3 Nc6 d4 exd4 Nxd4', n: 'Scotch Game' },
-  { m: 'e4 e5 Nf3 Nc6 d4 exd4',   n: 'Scotch Game' },
-  { m: 'e4 e5 Nf3 Nc6 d4',        n: 'Scotch Opening' },
-  { m: 'e4 e5 Nf3 Nc6 Nc3 Nf6',   n: 'Four Knights Game' },
-  { m: 'e4 e5 Nf3 Nf6 Nxe5 d6',   n: "Petrov's Defence" },
-  { m: 'e4 e5 Nf3 Nf6',           n: "Petrov's Defence" },
-  { m: 'e4 e5 Nf3 Nc6',           n: "King's Knight Opening" },
-  { m: 'e4 e5 Nf3 d6',            n: 'Philidor Defence' },
-  { m: 'e4 e5 Nf3 f6',            n: 'Damiano Defence' },
-  { m: 'e4 e5 Nf3',               n: "King's Knight Opening" },
-  { m: 'e4 e5 f4 exf4 Nf3 g5',    n: "King's Gambit, Kieseritzky" },
-  { m: 'e4 e5 f4 exf4 Bc4',       n: "King's Gambit, Bishop's Gambit" },
-  { m: 'e4 e5 f4 exf4',           n: "King's Gambit Accepted" },
-  { m: 'e4 e5 f4 d5',             n: 'Falkbeer Counter-Gambit' },
-  { m: 'e4 e5 f4 Bc5',            n: "King's Gambit Declined, Classical" },
-  { m: 'e4 e5 f4',                n: "King's Gambit" },
-  { m: 'e4 e5 Nc3 Nf6',           n: 'Vienna Game, Falkbeer Variation' },
-  { m: 'e4 e5 Nc3 Bc5',           n: 'Vienna Game, Classical' },
-  { m: 'e4 e5 Nc3',               n: 'Vienna Game' },
-  { m: 'e4 e5',                   n: 'Open Game' },
-  { m: 'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 Bg5', n: 'Sicilian, Najdorf (English Attack)' },
-  { m: 'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6', n: 'Sicilian, Najdorf' },
-  { m: 'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 g6', n: 'Sicilian, Dragon' },
-  { m: 'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 e6', n: 'Sicilian, Scheveningen' },
-  { m: 'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3', n: 'Sicilian, Open' },
-  { m: 'e4 c5 Nf3 d6 d4 cxd4 Nxd4', n: 'Sicilian, Open (d6)' },
-  { m: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 Nf6 Nc3 d6', n: 'Sicilian, Rauzer' },
-  { m: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6', n: 'Sicilian, Accelerated Dragon' },
-  { m: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4', n: 'Sicilian, Classical' },
-  { m: 'e4 c5 Nf3 e6 d4 cxd4 Nxd4 a6', n: 'Sicilian, Kan Variation' },
-  { m: 'e4 c5 Nf3 e6 d4 cxd4 Nxd4', n: 'Sicilian, Kan / Taimanov' },
-  { m: 'e4 c5 Nf3 d6',            n: 'Sicilian, Open (d6)' },
-  { m: 'e4 c5 Nf3 Nc6',           n: 'Sicilian, Open' },
-  { m: 'e4 c5 Nf3 e6',            n: 'Sicilian, Open' },
-  { m: 'e4 c5 Nf3',               n: 'Sicilian, Open' },
-  { m: 'e4 c5 c3 Nf6 e5',         n: 'Sicilian, Alapin (Anti-Nimzo)' },
-  { m: 'e4 c5 c3 d5 exd5',        n: 'Sicilian, Alapin (d5)' },
-  { m: 'e4 c5 c3',                n: 'Sicilian, Alapin' },
-  { m: 'e4 c5 Nc3',               n: 'Sicilian, Closed' },
-  { m: 'e4 c5 f4',                n: 'Sicilian, Grand Prix Attack' },
-  { m: 'e4 c5',                   n: 'Sicilian Defence' },
-  { m: 'e4 e6 d4 d5 e5 c5 c3',    n: 'French, Advance (Milner-Barry)' },
-  { m: 'e4 e6 d4 d5 e5 c5',       n: 'French, Advance Variation' },
-  { m: 'e4 e6 d4 d5 e5',          n: 'French, Advance Variation' },
-  { m: 'e4 e6 d4 d5 Nc3 Bb4',     n: 'French, Winawer Variation' },
-  { m: 'e4 e6 d4 d5 Nc3 Nf6',     n: 'French, Classical Variation' },
-  { m: 'e4 e6 d4 d5 Nc3',         n: 'French, Classical' },
-  { m: 'e4 e6 d4 d5 Nd2 c5',      n: 'French, Tarrasch (c5)' },
-  { m: 'e4 e6 d4 d5 Nd2 Nf6',     n: 'French, Tarrasch' },
-  { m: 'e4 e6 d4 d5 Nd2',         n: 'French, Tarrasch' },
-  { m: 'e4 e6 d4 d5 exd5 exd5',   n: 'French, Exchange Variation' },
-  { m: 'e4 e6 d4 d5 exd5',        n: 'French, Exchange Variation' },
-  { m: 'e4 e6 d4 d5',             n: 'French Defence' },
-  { m: 'e4 e6 d4',                n: 'French Defence' },
-  { m: 'e4 e6',                   n: 'French Defence' },
-  { m: 'e4 c6 d4 d5 e5 Bf5',      n: 'Caro-Kann, Advance Variation' },
-  { m: 'e4 c6 d4 d5 e5',          n: 'Caro-Kann, Advance Variation' },
-  { m: 'e4 c6 d4 d5 Nc3 dxe4 Nxe4 Bf5', n: 'Caro-Kann, Classical' },
-  { m: 'e4 c6 d4 d5 Nc3 dxe4 Nxe4 Nd7', n: 'Caro-Kann, Karpov Variation' },
-  { m: 'e4 c6 d4 d5 Nc3 dxe4',    n: 'Caro-Kann, Classical' },
-  { m: 'e4 c6 d4 d5 exd5 cxd5 c4', n: 'Caro-Kann, Panov Attack' },
-  { m: 'e4 c6 d4 d5 Nd2',         n: 'Caro-Kann, Modern Variation' },
-  { m: 'e4 c6 d4 d5 Nc3',         n: 'Caro-Kann, Classical' },
-  { m: 'e4 c6 d4 d5',             n: 'Caro-Kann Defence' },
-  { m: 'e4 c6 d4',                n: 'Caro-Kann Defence' },
-  { m: 'e4 c6',                   n: 'Caro-Kann Defence' },
-  { m: 'e4 d5 exd5 Qxd5 Nc3 Qa5', n: 'Scandinavian, Main Line' },
-  { m: 'e4 d5 exd5 Qxd5 Nc3',     n: 'Scandinavian Defence' },
-  { m: 'e4 d5 exd5 Nf6',          n: 'Scandinavian, Modern Variation' },
-  { m: 'e4 d5 exd5',              n: 'Scandinavian Defence' },
-  { m: 'e4 d5',                   n: 'Scandinavian Defence' },
-  { m: 'e4 d6 d4 Nf6 Nc3 g6',     n: 'Pirc Defence' },
-  { m: 'e4 d6 d4 Nf6',            n: 'Pirc Defence' },
-  { m: 'e4 d6',                   n: 'Pirc / Robatsch Defence' },
-  { m: 'e4 g6 d4 Bg7',            n: 'Modern Defence' },
-  { m: 'e4 g6',                   n: 'Modern Defence' },
-  { m: 'e4 Nf6 e5 Nd5 c4',        n: "Alekhine's Defence, Four Pawns Attack" },
-  { m: 'e4 Nf6 e5 Nd5',           n: "Alekhine's Defence" },
-  { m: 'e4 Nf6',                  n: "Alekhine's Defence" },
-  { m: 'e4',                      n: "King's Pawn Opening" },
-  { m: 'd4 d5 c4 e6 Nc3 Nf6 Bg5 Be7 e3 O-O Nf3', n: "Queen's Gambit Declined, Orthodox" },
-  { m: 'd4 d5 c4 e6 Nc3 Nf6 Bg5', n: "Queen's Gambit Declined, Classical" },
-  { m: 'd4 d5 c4 e6 Nc3 Nf6',     n: "Queen's Gambit Declined" },
-  { m: 'd4 d5 c4 e6 Nf3 Nf6 Nc3', n: "Queen's Gambit Declined" },
-  { m: 'd4 d5 c4 e6',             n: "Queen's Gambit Declined" },
-  { m: 'd4 d5 c4 dxc4 Nf3 Nf6',  n: "Queen's Gambit Accepted" },
-  { m: 'd4 d5 c4 dxc4',           n: "Queen's Gambit Accepted" },
-  { m: 'd4 d5 c4 c6 Nf3 Nf6 Nc3 dxc4', n: 'Slav, Exchange Variation' },
-  { m: 'd4 d5 c4 c6 Nf3 Nf6 Nc3', n: 'Slav Defence' },
-  { m: 'd4 d5 c4 c6 Nf3 Nf6',     n: 'Slav Defence' },
-  { m: 'd4 d5 c4 c6 Nc3',         n: 'Slav Defence' },
-  { m: 'd4 d5 c4 c6',             n: 'Slav Defence' },
-  { m: 'd4 d5 c4 Bf5',            n: "Queen's Gambit, Baltic Defence" },
-  { m: 'd4 d5 c4 Nf6',            n: "Queen's Gambit, Marshall Defence" },
-  { m: 'd4 d5 c4',                n: "Queen's Gambit" },
-  { m: 'd4 d5 Nf3 Nf6 c4',        n: "Queen's Gambit (delayed)" },
-  { m: 'd4 d5 Nf3 Nf6 Bf4',       n: 'London System' },
-  { m: 'd4 d5 Bf4',               n: 'London System' },
-  { m: 'd4 d5',                   n: "Queen's Pawn Game" },
-  { m: 'd4 Nf6 c4 e6 Nc3 Bb4 e3', n: 'Nimzo-Indian, Rubinstein' },
-  { m: 'd4 Nf6 c4 e6 Nc3 Bb4 Qc2', n: 'Nimzo-Indian, Classical' },
-  { m: 'd4 Nf6 c4 e6 Nc3 Bb4',    n: 'Nimzo-Indian Defence' },
-  { m: 'd4 Nf6 c4 e6 Nf3 b6 g3 Bb7', n: "Queen's Indian, Fianchetto" },
-  { m: 'd4 Nf6 c4 e6 Nf3 b6',     n: "Queen's Indian Defence" },
-  { m: 'd4 Nf6 c4 e6 Nc3',        n: "Queen's Indian / Nimzo" },
-  { m: 'd4 Nf6 c4 e6',            n: "Queen's / Nimzo-Indian" },
-  { m: 'd4 Nf6 c4 g6 Nc3 Bg7 e4 d6 Nf3 O-O Be2', n: "King's Indian, Classical" },
-  { m: 'd4 Nf6 c4 g6 Nc3 Bg7 e4 d6 f4', n: "King's Indian, Four Pawns Attack" },
-  { m: 'd4 Nf6 c4 g6 Nc3 Bg7 e4 d6', n: "King's Indian Defence" },
-  { m: 'd4 Nf6 c4 g6 Nc3 Bg7 e4', n: "King's Indian Defence" },
-  { m: 'd4 Nf6 c4 g6 Nc3 Bg7',    n: "King's Indian Defence" },
-  { m: 'd4 Nf6 c4 g6 Nc3',        n: "King's Indian Defence" },
-  { m: 'd4 Nf6 c4 g6',            n: "King's Indian Defence" },
-  { m: 'd4 Nf6 c4 d5 Nc3 g6',     n: 'Grünfeld Defence' },
-  { m: 'd4 Nf6 c4 d5 Nc3 dxc4',   n: 'Grünfeld, Exchange' },
-  { m: 'd4 Nf6 c4 d5 Nc3',        n: 'Grünfeld Defence' },
-  { m: 'd4 Nf6 c4 d5',            n: 'Grünfeld / Transposition' },
-  { m: 'd4 Nf6 c4 c5 d5 e6 Nc3',  n: 'Modern Benoni' },
-  { m: 'd4 Nf6 c4 c5 d5',         n: 'Benoni Defence' },
-  { m: 'd4 Nf6 c4',               n: 'Indian Defence' },
-  { m: 'd4 Nf6 Nf3 g6 c4',        n: "King's Indian (Transposition)" },
-  { m: 'd4 Nf6 Nf3 e6 c4',        n: "Queen's Indian (Transposition)" },
-  { m: 'd4 Nf6 Nf3 d5 c4',        n: "Queen's Gambit (Transposition)" },
-  { m: 'd4 Nf6 Bf4',              n: 'London System' },
-  { m: 'd4 Nf6',                  n: 'Indian Defence' },
-  { m: 'd4 f5 c4 Nf6 g3',         n: 'Dutch, Leningrad' },
-  { m: 'd4 f5 c4 e6',             n: 'Dutch, Classical' },
-  { m: 'd4 f5 Nf3 Nf6 g3',        n: 'Dutch, Leningrad' },
-  { m: 'd4 f5',                   n: 'Dutch Defence' },
-  { m: 'd4 e5',                   n: 'Englund Gambit' },
-  { m: 'd4',                      n: "Queen's Pawn Opening" },
-  { m: 'c4 e5 Nc3 Nf6 g3 d5 cxd5 Nxd5 Bg2', n: 'English, Reversed Dragon' },
-  { m: 'c4 e5 Nc3 Nf6',           n: "English, King's English" },
-  { m: 'c4 e5 Nc3 Nc6',           n: 'English, Four Knights' },
-  { m: 'c4 e5',                   n: "English, King's English" },
-  { m: 'c4 Nf6 Nc3 d5',           n: 'English, Anglo-Grünfeld' },
-  { m: 'c4 Nf6 Nc3 e6',           n: 'English, Agincourt' },
-  { m: 'c4 Nf6',                  n: 'English, Anglo-Indian' },
-  { m: 'c4 c5 Nf3 Nf6 Nc3 Nc6',  n: 'English, Symmetrical Four Knights' },
-  { m: 'c4 c5 Nf3 Nf6',           n: 'English, Symmetrical' },
-  { m: 'c4 c5',                   n: 'English, Symmetrical' },
-  { m: 'c4 d5 cxd5',              n: 'English, Anglo-Scandinavian' },
-  { m: 'c4',                      n: 'English Opening' },
-  { m: 'Nf3 d5 c4 d4',            n: 'Réti, Advance Variation' },
-  { m: 'Nf3 d5 c4 e6 g3',         n: 'Réti, Catalan formation' },
-  { m: 'Nf3 d5 c4',               n: 'Réti Opening' },
-  { m: 'Nf3 Nf6 c4 g6',           n: "Réti, King's Indian transposition" },
-  { m: 'Nf3 Nf6 c4',              n: 'Réti, Anglo-Indian' },
-  { m: 'Nf3 d5 g3',               n: "Réti, King's Indian Attack" },
-  { m: 'Nf3',                     n: 'Réti Opening' },
-  { m: 'g3 d5 Bg2',               n: "King's Fianchetto" },
-  { m: 'g3',                      n: "King's Fianchetto Opening" },
-  { m: 'b3 e5 Bb2',               n: 'Nimzo-Larsen Attack' },
-  { m: 'b3',                      n: 'Nimzo-Larsen Attack' },
-  { m: 'b4 e5',                   n: 'Polish Opening, Outflank Variation' },
-  { m: 'b4',                      n: 'Polish Opening' },
-  { m: 'f4 d5 Nf3',               n: "Bird's Opening, Dutch Variation" },
-  { m: 'f4',                      n: "Bird's Opening" },
-  { m: 'a3',                      n: 'Anderssen Opening' },
-  { m: 'a4',                      n: 'Ware Opening' },
-].sort((a, b) => b.m.length - a.m.length);
-
-function detectOpening(game) {
-  const moves = game.history().join(' ');
-  if (!moves) return null;
-  for (const { m, n } of ECO) {
-    if (moves === m || moves.startsWith(m + ' ')) return n;
-  }
-  return null;
-}
+// ── Opening name ─────────────────────────────────────────────────────────────
+// Uses eco-lookup.js (JeffML/eco.json, 12k+ openings, FEN-keyed).
+// Falls back silently if the database hasn't loaded yet.
 
 function updateOpeningName() {
   const el = document.getElementById('opening-name');
-  if (!el) return;
-  const name = detectOpening(chess);
-  el.textContent  = name || (chess.history().length ? 'Unknown opening' : 'Starting position');
-  el.style.color  = name ? 'var(--text)' : 'var(--text3)';
+  if (!el || !chess) return;
+
+  if (!ecoReady && !ecoFailed) {
+    // Still loading — show a placeholder, will update when ready
+    el.textContent = chess.history().length ? 'Identifying…' : 'Starting position';
+    el.style.color = 'var(--text3)';
+    return;
+  }
+
+  const result = lookupOpening(chess.fen());
+  if (result) {
+    el.textContent = result.displayName;
+    el.style.color = 'var(--text)';
+  } else {
+    el.textContent = chess.history().length ? 'Unknown opening' : 'Starting position';
+    el.style.color = 'var(--text3)';
+  }
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
