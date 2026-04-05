@@ -356,8 +356,7 @@ function triggerEngine() {
   if (!ec || chess.turn() !== ec) return;
   engineThinking = true;
   renderBoard();
-  if (gameMode === 'vs') runEngineWorker();
-  else setTimeout(runEngineSync, 30);
+  runEngineWorker();
 }
 
 function runEngineWorker() {
@@ -370,10 +369,16 @@ function runEngineWorker() {
         const r = chess.move({ from, to, promotion: promotion || 'q' });
         if (r) lastMove = { from: r.from, to: r.to };
       }
+      if (lastMove && isNavMode()) {
+        labHistory = labHistory.slice(0, labIndex + 1);
+        labHistory.push(chess.fen());
+        labIndex++;
+      }
       engineThinking = false;
       engineWorker   = null;
       renderBoard();
       updateEvalBar();
+      if (isNavMode()) updateOpeningName();
       if (chess.game_over()) { gameOver = true; setTimeout(showGameOverBanner, 400); }
     };
     engineWorker.onerror = () => { engineWorker = null; runEngineSync(); };
