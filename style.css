@@ -842,3 +842,76 @@ body {
 
 /* ── Success color variable (if not already defined) ── */
 :root { --success: #16a34a; }
+
+/* ── Opening Drill search ── */
+.drill-search-wrap {
+  position: relative;
+  max-width: 480px;
+  margin: 1rem auto .5rem;
+}
+.drill-search-input {
+  width: 100%;
+  font-size: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color .15s;
+  box-sizing: border-box;
+}
+.drill-search-input:focus { outline: none; border-color: var(--accent); }
+
+.drill-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  z-index: 50;
+  overflow: hidden;
+}
+.drill-result-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  transition: background .12s;
+  text-align: left;
+}
+.drill-result-item:hover { background: var(--surface2); }
+.drill-result-eco  { font-size: 10px; font-weight: 700; color: var(--accent); min-width: 32px; }
+.drill-result-name { font-size: 13px; color: var(--text); }
+.drill-result-empty { padding: 10px 14px; font-size: 13px; color: var(--text3); }
+
+/* ── Selected opening card ── */
+.drill-selected-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  max-width: 480px;
+  margin: .5rem auto 1rem;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+.drill-sel-eco   { font-size: 10px; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+.drill-sel-name  { font-size: 13px; font-weight: 700; color: var(--text); }
+.drill-sel-moves { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: var(--font-mono); }
+.drill-clear-btn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.drill-clear-btn:hover { color: var(--danger); }

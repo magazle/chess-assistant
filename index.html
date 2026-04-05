@@ -89,16 +89,41 @@
 
       <!-- Opening Drill -->
       <div id="panel-drill" class="tab-panel" style="display:none">
-        <p>Practice a specific opening line step by step. The app shows you whether each move is correct.</p>
-        <small>Paste any PGN from chess.com, lichess, or your own games.</small>
-        <div class="import-block" style="margin-top:1.2rem">
-          <div class="import-row">
-            <label class="import-lbl">PGN</label>
-            <textarea id="pgn-drill" class="import-textarea" rows="4"
-              placeholder="Paste a PGN line to drill&#10;e.g. 1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6"></textarea>
+        <p>Select an opening to practice. The app drills you move by move until the line is automatic.</p>
+        <small>Powered by 12,000+ openings — ECO A through E.</small>
+
+        <div class="drill-search-wrap">
+          <input type="text" id="drill-search" class="drill-search-input"
+            placeholder="Search openings… e.g. Sicilian, Ruy Lopez, French"
+            oninput="onDrillSearch(this.value)" autocomplete="off">
+          <div id="drill-results" class="drill-results"></div>
+        </div>
+
+        <div id="drill-selected-wrap" style="display:none">
+          <div class="drill-selected-card">
+            <div>
+              <div id="drill-selected-eco"  class="drill-sel-eco"></div>
+              <div id="drill-selected-name" class="drill-sel-name"></div>
+              <div id="drill-selected-moves" class="drill-sel-moves"></div>
+            </div>
+            <button class="drill-clear-btn" onclick="clearDrillSelection()">✕</button>
           </div>
         </div>
+
         <div id="drill-error" class="drill-error-msg"></div>
+
+        <details class="adv-options">
+          <summary>Or paste a custom PGN line</summary>
+          <div class="import-block">
+            <div class="import-row">
+              <label class="import-lbl">PGN</label>
+              <textarea id="pgn-drill" class="import-textarea" rows="3"
+                placeholder="e.g. 1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6"
+                oninput="if(this.value.trim()) clearDrillSelection()"></textarea>
+            </div>
+          </div>
+        </details>
+
         <div class="color-choice">
           <div class="cbtn" onclick="startDrill('w')">
             <span class="cbtn-piece" id="icon-drill-w"></span>

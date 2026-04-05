@@ -326,9 +326,10 @@ function markInputError(id) {
 }
 
 function resetGame() {
-  sfPending       = null;
-  analysisRunning = false;
-  drillFeedback   = null;
+  sfPending            = null;
+  analysisRunning      = false;
+  drillFeedback        = null;
+  selectedDrillOpening = null;
   document.getElementById('game').style.display  = 'none';
   document.getElementById('game').innerHTML      = '';
   document.getElementById('setup').style.display = 'block';
@@ -805,25 +806,99 @@ function askEngine() {
 
 // ── Opening Drill ─────────────────────────────────────────────────────────────
 
-function startDrill(color) {
-  const pgnEl = document.getElementById('pgn-drill');
-  const pgn   = pgnEl ? pgnEl.value.trim() : '';
+let selectedDrillOpening = null; // { name, eco, moves }
 
-  if (!pgn) {
-    const errEl = document.getElementById('drill-error');
-    if (errEl) { errEl.textContent = 'Paste a PGN line first.'; setTimeout(() => { errEl.textContent = ''; }, 2000); }
+function onDrillSearch(query) {
+  const resultsEl = document.getElementById('drill-results');
+  if (!resultsEl) return;
+
+  if (!query || query.length < 2) { resultsEl.innerHTML = ''; return; }
+
+  const results = searchOpenings(query);
+  if (!results.length) {
+    resultsEl.innerHTML = ecoReady
+      ? '<div class="drill-result-empty">No openings found</div>'
+      : '<div class="drill-result-empty">Database loading…</div>';
     return;
   }
 
-  const temp = new Chess();
-  if (!temp.load_pgn(pgn)) { markInputError('pgn-drill'); return; }
+  resultsEl.innerHTML = results.map((r, i) =>
+    `<div class="drill-result-item" onclick="selectDrillOpening(${i})" data-idx="${i}">
+      <span class="drill-result-eco">${r.eco}</span>
+      <span class="drill-result-name">${r.name}</span>
+    </div>`
+  ).join('');
 
-  const g    = new Chess();
-  const fens = [g.fen()];
-  for (const m of temp.history({ verbose: true })) { g.move(m); fens.push(g.fen()); }
+  // Store results for selection by index
+  resultsEl._results = results;
+}
 
-  if (fens.length < 2) { markInputError('pgn-drill'); return; }
+function selectDrillOpening(idx) {
+  const resultsEl = document.getElementById('drill-results');
+  if (!resultsEl || !resultsEl._results) return;
 
+  selectedDrillOpening = resultsEl._results[idx];
+  resultsEl.innerHTML  = '';
+
+  const searchEl = document.getElementById('drill-search');
+  if (searchEl) searchEl.value = '';
+
+  // Show selected card
+  const wrap     = document.getElementById('drill-selected-wrap');
+  const ecoEl    = document.getElementById('drill-selected-eco');
+  const nameEl   = document.getElementById('drill-selected-name');
+  const movesEl  = document.getElementById('drill-selected-moves');
+
+  if (wrap)    wrap.style.display  = 'block';
+  if (ecoEl)   ecoEl.textContent   = selectedDrillOpening.eco;
+  if (nameEl)  nameEl.textContent  = selectedDrillOpening.name;
+  if (movesEl) movesEl.textContent = selectedDrillOpening.moves;
+}
+
+function clearDrillSelection() {
+  selectedDrillOpening = null;
+  const wrap = document.getElementById('drill-selected-wrap');
+  if (wrap) wrap.style.display = 'none';
+}
+
+function startDrill(color) {
+  let fens = null;
+
+  // 1. Use selected opening from search
+  if (selectedDrillOpening) {
+    fens = parseMovesFen(selectedDrillOpening.moves);
+    if (fens.length < 2) {
+      showDrillError('Could not parse this opening line.');
+      return;
+    }
+  }
+
+  // 2. Fall back to manually pasted PGN
+  if (!fens) {
+    const pgnEl = document.getElementById('pgn-drill');
+    const pgn   = pgnEl ? pgnEl.value.trim() : '';
+    if (!pgn) {
+      showDrillError('Search for an opening or paste a PGN line first.');
+      return;
+    }
+    const temp = new Chess();
+    if (!temp.load_pgn(pgn)) { markInputError('pgn-drill'); return; }
+    const g = new Chess();
+    fens    = [g.fen()];
+    for (const m of temp.history({ verbose: true })) { g.move(m); fens.push(g.fen()); }
+    if (fens.length < 2) { markInputError('pgn-drill'); return; }
+  }
+
+  showDrillError('');
+  initDrillGame(color, fens);
+}
+
+function showDrillError(msg) {
+  const el = document.getElementById('drill-error');
+  if (el) el.textContent = msg;
+}
+
+function initDrillGame(color, fens) {
   drillLine     = fens;
   drillIndex    = 0;
   drillFeedback = null;
@@ -833,9 +908,9 @@ function startDrill(color) {
   chess.load(fens[0]);
   selectedSq    = null; legalTargets = []; lastMove = null;
   engineThinking = false; gameOver = false;
-  labHistory     = [...fens];
-  labIndex       = 0;
-  positionEvals  = new Array(fens.length).fill(null);
+  labHistory    = [...fens];
+  labIndex      = 0;
+  positionEvals       = new Array(fens.length).fill(null);
   moveClassifications = [];
 
   document.getElementById('setup').style.display = 'none';
@@ -847,22 +922,12 @@ function startDrill(color) {
   renderBoard();
   updateOpeningName();
 
-  // If opponent goes first (player is Black, White moves first)
-  if (chess.turn() !== color) {
-    setTimeout(advanceDrillOpponent, 400);
-  }
+  if (chess.turn() !== color) setTimeout(advanceDrillOpponent, 400);
 }
 
 function restartDrill() {
   if (!drillLine.length) return;
-  drillIndex    = 0;
-  drillFeedback = null;
-  chess.load(drillLine[0]);
-  lastMove = null; selectedSq = null; legalTargets = [];
-  labIndex = 0;
-  renderBoard();
-  updateOpeningName();
-  if (chess.turn() !== playerColor) setTimeout(advanceDrillOpponent, 400);
+  initDrillGame(playerColor, drillLine);
 }
 
 function checkDrillMove() {
