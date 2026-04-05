@@ -51,7 +51,6 @@ let lastMove         = null;
 let engineThinking   = false;
 let gameOver         = false;
 let currentDifficulty = 'club';
-let engineWorker     = null;
 
 // Lab / Analysis navigation
 let labHistory = [];
@@ -143,7 +142,8 @@ function markInputError(id) {
 }
 
 function resetGame() {
-  if (engineWorker) { engineWorker.terminate(); engineWorker = null; }
+  // Cancel any pending Stockfish response
+  sfPending = null;
   document.getElementById('game').style.display = 'none';
   document.getElementById('game').innerHTML     = '';
   document.getElementById('setup').style.display = 'block';
@@ -349,43 +349,116 @@ function applyMove(move) {
   }
 }
 
-// ── Engine ────────────────────────────────────────────────────────────────────
+// ── Stockfish engine ──────────────────────────────────────────────────────────
+
+const STOCKFISH_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
+
+// Skill level and movetime per difficulty
+const SF_LEVELS = {
+  beginner: { skill:  2, movetime:  150 },
+  casual:   { skill:  5, movetime:  300 },
+  club:     { skill: 10, movetime:  600 },
+  advanced: { skill: 15, movetime: 1200 },
+  master:   { skill: 20, movetime: 2500 },
+};
+
+let sfWorker  = null;  // Persistent Stockfish Web Worker
+let sfReady   = false; // True after UCI handshake completes
+let sfPending = null;  // Callback waiting for the next bestmove
+
+function initStockfish() {
+  if (sfWorker) return;
+  fetch(STOCKFISH_CDN)
+    .then(r => r.blob())
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      sfWorker  = new Worker(url);
+      URL.revokeObjectURL(url);
+      sfWorker.onmessage = onSfMessage;
+      sfWorker.onerror   = () => { sfWorker = null; sfReady = false; };
+      sfWorker.postMessage('uci');
+    })
+    .catch(() => {}); // Silent — minimax sync fallback will be used
+}
+
+function onSfMessage({ data }) {
+  if (typeof data !== 'string') return;
+  if (data === 'uciok') {
+    sfWorker.postMessage('isready');
+  } else if (data === 'readyok') {
+    sfReady = true;
+  } else if (data.startsWith('bestmove') && sfPending) {
+    const cb  = sfPending;
+    sfPending = null;
+    cb(data.split(' ')[1]); // e.g. "e2e4"
+  }
+}
+
+// ── Engine dispatch ───────────────────────────────────────────────────────────
 
 function triggerEngine() {
   const ec = getEngineColor();
   if (!ec || chess.turn() !== ec) return;
   engineThinking = true;
   renderBoard();
-  runEngineWorker();
+  runEngine();
 }
 
-function runEngineWorker() {
-  const { depth, blunder } = DIFFICULTY[currentDifficulty];
-  if (engineWorker) engineWorker.terminate();
-  try {
-    engineWorker = new Worker('./engine.worker.js');
-    engineWorker.onmessage = ({ data: { from, to, promotion } }) => {
-      if (from) {
-        const r = chess.move({ from, to, promotion: promotion || 'q' });
-        if (r) lastMove = { from: r.from, to: r.to };
+function runEngine() {
+  const { blunder } = DIFFICULTY[currentDifficulty];
+
+  // Blunder rate — occasionally play a random legal move
+  if (blunder > 0 && Math.random() < blunder) {
+    const moves = chess.moves({ verbose: true });
+    const m     = moves[Math.floor(Math.random() * moves.length)];
+    if (m) { chess.move(m); onEngineMoveApplied(m.from, m.to); }
+    else   { engineThinking = false; renderBoard(); }
+    return;
+  }
+
+  if (sfReady && sfWorker) {
+    const { skill, movetime } = SF_LEVELS[currentDifficulty];
+    const limitStrength = skill < 20 ? 'true' : 'false';
+    sfPending = (moveStr) => {
+      const from  = moveStr.slice(0, 2);
+      const to    = moveStr.slice(2, 4);
+      const promo = moveStr[4] || 'q';
+      const move  = chess.move({ from, to, promotion: promo });
+      if (move) {
+        onEngineMoveApplied(move.from, move.to);
+      } else {
+        // Position string mismatch — fall back to first legal move
+        const legal = chess.moves({ verbose: true });
+        if (legal.length) { const m = chess.move(legal[0]); if (m) onEngineMoveApplied(m.from, m.to); }
+        else { engineThinking = false; renderBoard(); }
       }
-      if (lastMove && isNavMode()) {
-        labHistory = labHistory.slice(0, labIndex + 1);
-        labHistory.push(chess.fen());
-        labIndex++;
-      }
-      engineThinking = false;
-      engineWorker   = null;
-      renderBoard();
-      updateEvalBar();
-      if (isNavMode()) updateOpeningName();
-      if (chess.game_over()) { gameOver = true; setTimeout(showGameOverBanner, 400); }
     };
-    engineWorker.onerror = () => { engineWorker = null; runEngineSync(); };
-    engineWorker.postMessage({ fen: chess.fen(), depth, engineColor: getEngineColor(), blunderRate: blunder });
-  } catch { runEngineSync(); }
+    sfWorker.postMessage(`setoption name UCI_LimitStrength value ${limitStrength}`);
+    sfWorker.postMessage(`setoption name Skill Level value ${skill}`);
+    sfWorker.postMessage(`position fen ${chess.fen()}`);
+    sfWorker.postMessage(`go movetime ${movetime}`);
+  } else {
+    // Stockfish not ready yet — use minimax sync fallback
+    runEngineSync();
+  }
 }
 
+// Called after the engine commits a move to the chess.js state
+function onEngineMoveApplied(from, to) {
+  lastMove = { from, to };
+  if (isNavMode()) {
+    labHistory = labHistory.slice(0, labIndex + 1);
+    labHistory.push(chess.fen());
+    labIndex++;
+  }
+  engineThinking = false;
+  renderBoard();
+  updateEvalBar();
+  if (isNavMode()) updateOpeningName();
+  if (chess.game_over()) { gameOver = true; setTimeout(showGameOverBanner, 400); }
+}
+
+// Minimax fallback — blocks the UI thread, used only when Stockfish is unavailable
 function runEngineSync() {
   const ec              = getEngineColor();
   const { depth, blunder } = DIFFICULTY[currentDifficulty];
@@ -400,20 +473,8 @@ function runEngineSync() {
     if (best) chess.move(best);
   }
 
-  if (best) {
-    lastMove = { from: best.from, to: best.to };
-    if (isNavMode()) {
-      labHistory = labHistory.slice(0, labIndex + 1);
-      labHistory.push(chess.fen());
-      labIndex++;
-    }
-  }
-
-  engineThinking = false;
-  renderBoard();
-  updateEvalBar();
-  if (isNavMode()) updateOpeningName();
-  if (chess.game_over()) { gameOver = true; setTimeout(showGameOverBanner, 400); }
+  if (best) onEngineMoveApplied(best.from, best.to);
+  else { engineThinking = false; renderBoard(); }
 }
 
 // ── Navigation (Lab / Analysis) ───────────────────────────────────────────────
@@ -452,19 +513,38 @@ function askEngine() {
   const txt = document.getElementById('hint-text');
   if (btn) { btn.disabled = true; btn.textContent = 'Calculating…'; }
 
-  setTimeout(() => {
-    const turn = chess.turn();
-    const best = getBestMove(chess, DIFFICULTY[currentDifficulty].depth, turn);
-    if (best) {
-      hintFrom = best.from;
-      hintTo   = best.to;
-      renderBoard();
-      if (txt) txt.textContent = `Best for ${turn === 'w' ? 'White' : 'Black'}: ${best.san}`;
-    } else {
-      if (txt) txt.textContent = 'No move found.';
-    }
+  const finish = (from, to, san) => {
+    hintFrom = from;
+    hintTo   = to;
+    renderBoard();
+    if (txt) txt.textContent = `Best for ${chess.turn() === 'w' ? 'White' : 'Black'}: ${san || (from + to)}`;
     if (btn) { btn.disabled = false; btn.textContent = 'Ask engine for best move'; }
-  }, 20);
+  };
+
+  if (sfReady && sfWorker) {
+    const { movetime } = SF_LEVELS[currentDifficulty];
+    sfPending = (moveStr) => {
+      const from = moveStr.slice(0, 2);
+      const to   = moveStr.slice(2, 4);
+      // Peek at SAN without committing the move
+      const temp = new Chess(); temp.load(chess.fen());
+      const m    = temp.move({ from, to, promotion: moveStr[4] || 'q' });
+      finish(from, to, m ? m.san : null);
+    };
+    sfWorker.postMessage(`setoption name Skill Level value 20`);
+    sfWorker.postMessage(`position fen ${chess.fen()}`);
+    sfWorker.postMessage(`go movetime ${movetime}`);
+  } else {
+    setTimeout(() => {
+      const turn = chess.turn();
+      const best = getBestMove(chess, DIFFICULTY[currentDifficulty].depth, turn);
+      if (best) finish(best.from, best.to, best.san);
+      else {
+        if (txt) txt.textContent = 'No move found.';
+        if (btn) { btn.disabled = false; btn.textContent = 'Ask engine for best move'; }
+      }
+    }, 20);
+  }
 }
 
 // ── Promotion picker ──────────────────────────────────────────────────────────
@@ -579,3 +659,6 @@ function setDifficultyByIndex(idx) {
     });
   });
 }
+
+// Start loading Stockfish in the background immediately
+initStockfish();
