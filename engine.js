@@ -163,3 +163,18 @@ function getBestMove(chess, depth, playerColor) {
   }
   return bestMove;
 }
+
+// Static evaluation from white's perspective — used for the evaluation bar
+function staticEvalWhite(chess) {
+  if (chess.in_checkmate()) return chess.turn() === 'w' ? -100000 : 100000;
+  if (chess.in_draw() || chess.in_stalemate() || chess.in_threefold_repetition()) return 0;
+  let score = 0;
+  chess.board().forEach((row, r) => {
+    row.forEach((piece, c) => {
+      if (!piece) return;
+      const v = PIECE_VALUES[piece.type] + getPST(piece.type, piece.color, r, c);
+      score += piece.color === 'w' ? v : -v;
+    });
+  });
+  return score;
+}
