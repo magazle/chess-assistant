@@ -47,20 +47,22 @@
         </div>
       </div>
 
-      <div id="panel-puzzle" class="tab-panel" style="display:none">
-        <p>Solve curated tactical positions or build your own.</p>
-        <small>Mate in 1 · Position editor · Share via link</small>
-        <div class="color-choice">
-          <div class="cbtn" onclick="startSolveMode()">
-            <span class="cbtn-piece" id="icon-pz-solve"></span>
-            <span class="btnlbl">Solve puzzles</span>
-          </div>
-          <div class="cbtn" onclick="startEditorMode()">
-            <span class="cbtn-piece" id="icon-pz-create"></span>
-            <span class="btnlbl">Create puzzles</span>
-          </div>
-        </div>
-      </div>
+      <!-- Puzzles — editor + coming soon solve -->
+<div id="panel-puzzle" class="tab-panel" style="display:none">
+  <p>Build a position and share it, or solve curated tactical puzzles.</p>
+  <small>Place pieces freely · Play from any position · Copy share link</small>
+  <div class="color-choice">
+    <div class="cbtn cbtn-disabled">
+      <span class="cbtn-piece" id="icon-pz-solve"></span>
+      <span class="btnlbl">Solve puzzles</span>
+      <span class="coming-soon-badge">coming soon</span>
+    </div>
+    <div class="cbtn" onclick="startEditorMode()">
+      <span class="cbtn-piece" id="icon-pz-create"></span>
+      <span class="btnlbl">Create position</span>
+    </div>
+  </div>
+</div>
 
       <div class="depth-setup" id="depth-setup-panel">
         <div class="clbl">Engine strength</div>
@@ -107,6 +109,8 @@
       document.getElementById('icon-as-b').innerHTML = setupIconHTML('b', 'k');
       document.getElementById('icon-pz-solve').innerHTML = setupIconHTML('w', 'n');
       document.getElementById('icon-pz-create').innerHTML = setupIconHTML('b', 'b');
+      document.getElementById('icon-pz-solve').innerHTML  = getPieceSVG('b', 'n', 52);
+
     });
 
     window.addEventListener('load', () => {
