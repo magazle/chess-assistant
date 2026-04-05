@@ -649,3 +649,52 @@ body {
 @media (max-width: 620px) {
   .eval-bar { height: 352px; }
 }
+
+/* ── Move animation ── */
+@keyframes piece-land {
+  from { transform: scale(1.18); opacity: 0.6; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.sq.lt2 .piece,
+.sq.lf  .piece { animation: piece-land 160ms ease-out; }
+
+/* ── Promotion picker ── */
+.promo-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.promo-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 20px 16px 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+  text-align: center;
+  min-width: 240px;
+}
+.promo-box .clbl { margin-bottom: 14px; display: block; }
+.promo-pieces {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.promo-piece {
+  width: 54px; height: 54px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: border-color .12s, background .12s, transform .1s;
+}
+.promo-piece:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  transform: scale(1.08);
+}
+.promo-piece img { width: 38px; height: 38px; pointer-events: none; }
