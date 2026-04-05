@@ -121,7 +121,7 @@ function buildEditorUI() {
             ${PIECE_TYPES.map(t=>`<div class="pal-piece" data-color="w" data-type="${t}" onclick="selectEditorPiece('w','${t}')">${pieceImgHTML('w',t,'pal-piece-img')}</div>`).join('')}
             <div class="pal-spacer"></div>
             ${PIECE_TYPES.map(t=>`<div class="pal-piece" data-color="b" data-type="${t}" onclick="selectEditorPiece('b','${t}')">${pieceImgHTML('b',t,'pal-piece-img')}</div>`).join('')}
-            <div class="pal-piece pal-erase" onclick="selectEditorPiece(null,null)">✕</div>
+            <button class="pal-erase-btn" id="pal-erase-btn" onclick="selectEditorPiece(null,null)">✕ Erase</button>
           </div>
         </div>
         <div class="pcard">
@@ -161,9 +161,10 @@ function selectEditorPiece(color, type) {
   edSelectedPiece = color ? { color, type } : null;
   document.querySelectorAll('.pal-piece').forEach(el => {
     el.classList.toggle('pal-active',
-      (el.dataset.color === color && el.dataset.type === type) ||
-      (!color && el.classList.contains('pal-erase')));
+      el.dataset.color === color && el.dataset.type === type);
   });
+  const eraseBtn = document.getElementById('pal-erase-btn');
+  if (eraseBtn) eraseBtn.classList.toggle('pal-active', !color);
 }
 
 function setEditorTurn(color) {
