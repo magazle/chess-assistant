@@ -119,6 +119,7 @@ function buildEditorUI() {
           <div class="clbl">Pieces</div>
           <div class="piece-palette">
             ${PIECE_TYPES.map(t=>`<div class="pal-piece" data-color="w" data-type="${t}" onclick="selectEditorPiece('w','${t}')">${pieceImgHTML('w',t,'pal-piece-img')}</div>`).join('')}
+            <div class="pal-spacer"></div>
             ${PIECE_TYPES.map(t=>`<div class="pal-piece" data-color="b" data-type="${t}" onclick="selectEditorPiece('b','${t}')">${pieceImgHTML('b',t,'pal-piece-img')}</div>`).join('')}
             <div class="pal-piece pal-erase" onclick="selectEditorPiece(null,null)">✕</div>
           </div>
