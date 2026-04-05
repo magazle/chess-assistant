@@ -758,3 +758,87 @@ body {
   margin-top: 8px;
   min-height: 16px;
 }
+
+/* ── Move classification symbols ── */
+.mv-sym {
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 3px;
+  vertical-align: middle;
+}
+.mv-best       { color: #2563eb; }
+.mv-excellent  { color: #16a34a; }
+.mv-good       { color: #65a30d; }
+.mv-inaccuracy { color: #d97706; }
+.mv-mistake    { color: #ea580c; }
+.mv-blunder    { color: #dc2626; }
+
+/* ── Eval score text (Analysis mode) ── */
+.eval-score-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  text-align: center;
+  margin-top: 4px;
+  min-height: 14px;
+  letter-spacing: .02em;
+}
+.eval-score-text.eval-pos { color: #1d4ed8; }
+.eval-score-text.eval-neg { color: #991b1b; }
+
+/* ── Inline button (analysis status) ── */
+.inline-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  text-decoration: underline;
+}
+.inline-btn:hover { opacity: .75; }
+
+/* ── Drill board flash ── */
+#board.drill-correct { box-shadow: 0 0 0 3px var(--success); }
+#board.drill-wrong   { box-shadow: 0 0 0 3px var(--danger);  }
+
+/* ── Drill progress bar ── */
+.drill-progress-bar {
+  height: 6px;
+  background: var(--border2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.drill-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width .3s ease;
+}
+
+/* ── Drill complete card ── */
+.drill-complete {
+  text-align: center;
+  padding: 24px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  margin-top: 16px;
+  width: 100%;
+}
+
+/* ── Drill error message ── */
+.drill-error-msg {
+  font-size: 12px;
+  color: var(--danger);
+  min-height: 16px;
+  text-align: center;
+  margin-top: -8px;
+  margin-bottom: 8px;
+}
+
+/* ── Success color variable (if not already defined) ── */
+:root { --success: #16a34a; }

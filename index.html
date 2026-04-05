@@ -14,6 +14,7 @@
       <div class="mode-tabs">
         <button class="tab active" id="tab-vs"             onclick="selectTab('vs')">vs Engine</button>
         <button class="tab"        id="tab-lab"            onclick="selectTab('lab')">Opening Lab</button>
+        <button class="tab"        id="tab-drill"          onclick="selectTab('drill')">Opening Drill</button>
         <button class="tab"        id="tab-analysis"       onclick="selectTab('analysis')">Analysis</button>
         <button class="tab"        id="tab-correspondence" onclick="selectTab('correspondence')">Engine Pilot</button>
         <button class="tab"        id="tab-puzzle"         onclick="selectTab('puzzle')">Puzzles</button>
@@ -86,10 +87,34 @@
         </div>
       </div>
 
+      <!-- Opening Drill -->
+      <div id="panel-drill" class="tab-panel" style="display:none">
+        <p>Practice a specific opening line step by step. The app shows you whether each move is correct.</p>
+        <small>Paste any PGN from chess.com, lichess, or your own games.</small>
+        <div class="import-block" style="margin-top:1.2rem">
+          <div class="import-row">
+            <label class="import-lbl">PGN</label>
+            <textarea id="pgn-drill" class="import-textarea" rows="4"
+              placeholder="Paste a PGN line to drill&#10;e.g. 1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6"></textarea>
+          </div>
+        </div>
+        <div id="drill-error" class="drill-error-msg"></div>
+        <div class="color-choice">
+          <div class="cbtn" onclick="startDrill('w')">
+            <span class="cbtn-piece" id="icon-drill-w"></span>
+            <span class="btnlbl">Drill as White</span>
+          </div>
+          <div class="cbtn" onclick="startDrill('b')">
+            <span class="cbtn-piece" id="icon-drill-b"></span>
+            <span class="btnlbl">Drill as Black</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Analysis Board -->
       <div id="panel-analysis" class="tab-panel" style="display:none">
-        <p>Move both sides freely. Ask the engine for its best move at any moment — it highlights the suggestion without playing it.</p>
-        <small>Move navigation · Opening detection · Eval bar</small>
+        <p>Move both sides freely. Ask the engine for its best move, or analyze the full game to classify every move.</p>
+        <small>Move classification · Critical moment · Eval bar · Opening detection</small>
         <div class="diff-slider-wrap">
           <input type="range" class="diff-slider" id="slider-analysis" min="0" max="4" step="1" value="2"
             oninput="setDifficultyByIndex(+this.value)">
@@ -190,12 +215,12 @@
   <script src="ui.js"></script>
   <script src="puzzle-mode.js"></script>
   <script>
-    const ALL_TABS = ['vs','lab','analysis','correspondence','puzzle'];
+    const ALL_TABS = ['vs','lab','drill','analysis','correspondence','puzzle'];
 
     function selectTab(tab) {
       ALL_TABS.forEach(t => {
         document.getElementById('panel-' + t).style.display = t === tab ? 'block' : 'none';
-        document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+        document.getElementById('tab-'   + t).classList.toggle('active', t === tab);
       });
     }
 
@@ -209,12 +234,14 @@
       setupIcon('icon-vs-b',     'b', 'k');
       setupIcon('icon-lab-w',    'w', 'q');
       setupIcon('icon-lab-b',    'b', 'q');
+      setupIcon('icon-drill-w',  'w', 'n');
+      setupIcon('icon-drill-b',  'b', 'n');
       setupIcon('icon-an-w',     'w', 'b');
       setupIcon('icon-an-b',     'b', 'b');
       setupIcon('icon-cor-w',    'w', 'r');
       setupIcon('icon-cor-b',    'b', 'r');
-      setupIcon('icon-pz-create','w', 'n');
-      setDifficultyByIndex(2); // default: Club
+      setupIcon('icon-pz-create','w', 'b');
+      setDifficultyByIndex(2);
     });
 
     window.addEventListener('load', () => {
@@ -224,6 +251,7 @@
       }
     });
   </script>
+
   <script src='https://storage.ko-fi.com/cdn/scripts/overlay-widget.js'></script>
   <script>
     kofiWidgetOverlay.draw('chessbro', {
